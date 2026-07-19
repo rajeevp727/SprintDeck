@@ -765,37 +765,7 @@ input:focus {
   }
 }
 
-/* ---------- Ceremony switch (Home → Retro) ---------- */
-.ceremony-switch {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  margin-top: 1.25rem;
-  padding: 0.85rem 1rem;
-  text-align: left;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 0.95rem;
-  transition: border-color var(--transition), background var(--transition), transform var(--transition);
-}
-.ceremony-switch:hover {
-  border-color: var(--accent);
-  background: var(--panel-2);
-  transform: translateY(-1px);
-}
-.ceremony-switch-icon {
-  font-size: 1.4rem;
-}
-.ceremony-switch > span:nth-child(2) {
-  flex: 1;
-}
-.ceremony-switch-arrow {
-  color: var(--accent);
-  font-size: 1.1rem;
-}
+/* Footer separator (retro join screen) */
 .footer-sep {
   color: var(--muted);
   margin: 0 0.5rem;

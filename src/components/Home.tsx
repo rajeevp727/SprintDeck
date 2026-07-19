@@ -6,11 +6,10 @@ import AdBanner from './AdBanner';
 interface Props {
   initialCode?: string;
   onEnter: (code: string) => void;
-  onRetro: () => void;
   onPrivacy: () => void;
 }
 
-export default function Home({ initialCode = '', onEnter, onRetro, onPrivacy }: Props) {
+export default function Home({ initialCode = '', onEnter, onPrivacy }: Props) {
   const [mode, setMode] = useState<'create' | 'join'>(initialCode ? 'join' : 'create');
   const [name, setName] = useState('');
   const [sessionName, setSessionName] = useState('');
@@ -119,15 +118,6 @@ export default function Home({ initialCode = '', onEnter, onRetro, onPrivacy }: 
 
         {error && <p className="error">{error}</p>}
       </div>
-
-      <button className="ceremony-switch" onClick={onRetro}>
-        <span className="ceremony-switch-icon">🗂️</span>
-        <span>
-          <strong>Sprint Retrospective</strong>
-          <span className="muted"> — reflect as a team on a Miro-style board</span>
-        </span>
-        <span className="ceremony-switch-arrow">→</span>
-      </button>
 
       <AdBanner />
 

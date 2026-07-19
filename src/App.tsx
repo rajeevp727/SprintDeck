@@ -5,60 +5,43 @@ import RetroHome from './components/RetroHome';
 import RetroBoard from './components/RetroBoard';
 import Privacy from './components/Privacy';
 import StickyAd from './components/StickyAd';
-import {
-  getIdentity,
-  getCurrentRoom,
-  setCurrentRoom,
-  clearCurrentRoom,
-  getCurrentRetro,
-  setCurrentRetro,
-  clearCurrentRetro,
-} from './storage';
+import { getIdentity, getCurrentRoom, setCurrentRoom, clearCurrentRoom } from './storage';
 
 type Route =
   | { kind: 'room'; code: string }
   | { kind: 'retro'; code: string }
-  | { kind: 'retroHome'; joinCode?: string }
+  | { kind: 'retroJoin'; code: string }
   | { kind: 'privacy' }
   | { kind: 'home'; joinCode?: string };
 
-// The room/board code is NOT kept in the URL — it lives in storage (see
-// storage.ts). Invite links carry the code as a ?room=CODE (poker) or
-// ?retro=CODE (retro) query param, which is read on open and then stripped from
-// the address bar. A legacy /room-CODE path is also honored. Otherwise the
-// session resumes from storage; the visible URL stays "/".
-function codeFromUrl(param: 'room' | 'retro'): string {
+// The retrospective board has its own real URL path: /retro/CODE (unlike poker
+// rooms, whose code is kept out of the address bar). The moderator shares this
+// link so the team can join and participate in the retro.
+const RETRO_PATH_RE = /^\/retro\/([A-Za-z0-9-]+)\/?$/;
+
+// Poker invite links carry the code as ?room=CODE (or a legacy /room-CODE path),
+// which is read on open and then stripped from the address bar.
+function pokerCodeFromUrl(): string {
   const params = new URLSearchParams(window.location.search);
-  const fromQuery = (params.get(param) || '').toUpperCase();
+  const fromQuery = (params.get('room') || '').toUpperCase();
   if (fromQuery) return fromQuery;
-  if (param === 'room') {
-    const legacy = window.location.pathname.match(/^\/room-([A-Za-z0-9-]+)\/?$/);
-    return legacy ? legacy[1].toUpperCase() : '';
-  }
-  return '';
+  const legacy = window.location.pathname.match(/^\/room-([A-Za-z0-9-]+)\/?$/);
+  return legacy ? legacy[1].toUpperCase() : '';
 }
 
 function computeRoute(): Route {
   const path = window.location.pathname;
   if (path === '/privacy' || path === '/privacy/') return { kind: 'privacy' };
 
-  // Retro section — invite link (?retro=CODE), /retro path, or resume from storage.
-  const retroCode = codeFromUrl('retro');
-  if (retroCode) {
-    if (getIdentity(retroCode)) {
-      setCurrentRetro(retroCode);
-      return { kind: 'retro', code: retroCode };
-    }
-    return { kind: 'retroHome', joinCode: retroCode };
-  }
-  if (path === '/retro' || path === '/retro/') {
-    const currentRetro = getCurrentRetro();
-    if (currentRetro && getIdentity(currentRetro)) return { kind: 'retro', code: currentRetro };
-    return { kind: 'retroHome' };
+  const retroMatch = path.match(RETRO_PATH_RE);
+  if (retroMatch) {
+    const code = retroMatch[1].toUpperCase();
+    // In the board if you already have an identity for it, else join by name.
+    if (getIdentity(code)) return { kind: 'retro', code };
+    return { kind: 'retroJoin', code };
   }
 
-  // Planning poker — invite link (?room=CODE / legacy path) or resume from storage.
-  const code = codeFromUrl('room');
+  const code = pokerCodeFromUrl();
   if (code) {
     if (getIdentity(code)) {
       setCurrentRoom(code);
@@ -66,9 +49,6 @@ function computeRoute(): Route {
     }
     return { kind: 'home', joinCode: code };
   }
-
-  const currentRetro = getCurrentRetro();
-  if (currentRetro && getIdentity(currentRetro)) return { kind: 'retro', code: currentRetro };
 
   const current = getCurrentRoom();
   if (current && getIdentity(current)) return { kind: 'room', code: current };
@@ -79,7 +59,8 @@ export default function App() {
   const [route, setRoute] = useState<Route>(computeRoute);
 
   useEffect(() => {
-    // Strip the code (query param or legacy path) out of the address bar.
+    // Strip the poker code (query param or legacy path) out of the address bar.
+    // The retro path (/retro/CODE) is intentionally kept in the URL.
     if (window.location.search || /^\/room-/.test(window.location.pathname)) {
       window.history.replaceState({}, '', '/');
     }
@@ -94,24 +75,22 @@ export default function App() {
     setRoute(next);
   }
   function goRoom(code: string) {
-    clearCurrentRetro();
     setCurrentRoom(code);
     go('/', { kind: 'room', code: code.toUpperCase() }, true); // clean URL, no code
   }
   function goRetro(code: string) {
-    clearCurrentRoom();
-    setCurrentRetro(code);
-    go('/', { kind: 'retro', code: code.toUpperCase() }, true); // clean URL, no code
+    const c = code.toUpperCase();
+    go(`/retro/${c}`, { kind: 'retro', code: c }); // keep the code in the URL
   }
   function goHome() {
     clearCurrentRoom();
-    clearCurrentRetro();
     go('/', { kind: 'home' }, true);
   }
-  function goRetroHome() {
-    clearCurrentRoom();
-    clearCurrentRetro();
-    go('/retro', { kind: 'retroHome' });
+  // Leave a retro without disturbing an active poker room — recompute from
+  // storage so an in-progress room resumes, otherwise land on home.
+  function exitRetro() {
+    window.history.pushState({}, '', '/');
+    setRoute(computeRoute());
   }
   function goPrivacy() {
     go('/privacy', { kind: 'privacy' });
@@ -121,27 +100,17 @@ export default function App() {
   if (route.kind === 'privacy') {
     page = <Privacy onBack={goHome} />;
   } else if (route.kind === 'room') {
-    page = <Room code={route.code} onLeave={goHome} onMissingIdentity={goHome} />;
-  } else if (route.kind === 'retro') {
-    page = <RetroBoard code={route.code} onLeave={goRetroHome} onMissingIdentity={goRetroHome} />;
-  } else if (route.kind === 'retroHome') {
     page = (
-      <RetroHome
-        initialCode={route.joinCode}
-        onEnter={goRetro}
-        onPoker={goHome}
-        onPrivacy={goPrivacy}
-      />
+      <Room code={route.code} onLeave={goHome} onMissingIdentity={goHome} onEnterRetro={goRetro} />
+    );
+  } else if (route.kind === 'retro') {
+    page = <RetroBoard code={route.code} onLeave={exitRetro} onMissingIdentity={exitRetro} />;
+  } else if (route.kind === 'retroJoin') {
+    page = (
+      <RetroHome joinCode={route.code} onEnter={goRetro} onExit={exitRetro} onPrivacy={goPrivacy} />
     );
   } else {
-    page = (
-      <Home
-        initialCode={route.joinCode}
-        onEnter={goRoom}
-        onRetro={goRetroHome}
-        onPrivacy={goPrivacy}
-      />
-    );
+    page = <Home initialCode={route.joinCode} onEnter={goRoom} onPrivacy={goPrivacy} />;
   }
 
   return (

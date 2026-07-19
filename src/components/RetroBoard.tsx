@@ -89,7 +89,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   async function copyInvite() {
-    const url = `${location.origin}/?retro=${code}`;
+    const url = `${location.origin}/retro/${code}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

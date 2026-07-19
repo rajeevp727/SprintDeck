@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
-import { clearIdentity, getIdentity } from '../storage';
+import { retroApi } from '../retroApi';
+import { clearIdentity, getIdentity, saveIdentity, getRoomRetro, setRoomRetro } from '../storage';
 import type { Session } from '../types';
 import ResultsModal from './ResultsModal';
 import AdBanner from './AdBanner';
@@ -18,9 +19,10 @@ interface Props {
   code: string;
   onLeave: () => void;
   onMissingIdentity: () => void;
+  onEnterRetro: (code: string) => void;
 }
 
-export default function Room({ code, onLeave, onMissingIdentity }: Props) {
+export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }: Props) {
   const identity = getIdentity(code);
   const participantId = identity?.participantId ?? '';
 
@@ -29,6 +31,7 @@ export default function Room({ code, onLeave, onMissingIdentity }: Props) {
   const [myVote, setMyVote] = useState<string | null>(null);
   const [queueDraft, setQueueDraft] = useState('');
   const [copied, setCopied] = useState(false);
+  const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const missCount = useRef(0);
@@ -156,6 +159,27 @@ export default function Room({ code, onLeave, onMissingIdentity }: Props) {
     onLeave();
   }
 
+  // Moderator-only: spin up (or reopen) a retrospective board for this room and
+  // jump to it. The board has its own /retro/CODE URL to share with the team.
+  async function startRetro() {
+    const existing = getRoomRetro(code);
+    if (existing) {
+      onEnterRetro(existing);
+      return;
+    }
+    setRetroBusy(true);
+    try {
+      const myName = getIdentity(code)?.name ?? 'Facilitator';
+      const res = await retroApi.createBoard(`${session?.name ?? 'Sprint'} — Retro`, myName, '');
+      saveIdentity(res.board.code, res.participantId, myName);
+      setRoomRetro(code, res.board.code);
+      onEnterRetro(res.board.code);
+    } catch (err) {
+      setError((err as Error).message);
+      setRetroBusy(false);
+    }
+  }
+
   async function copyInvite() {
     // Invite link carries the code as a query param; the app reads it on open
     // and strips it from the URL, so the code isn't left in the address bar.
@@ -221,6 +245,11 @@ export default function Room({ code, onLeave, onMissingIdentity }: Props) {
           {isModerator && (
             <button className="ghost" onClick={copyInvite}>
               {copied ? 'Copied!' : 'Invite'}
+            </button>
+          )}
+          {isModerator && (
+            <button className="ghost" title="Open a Sprint Retrospective board" disabled={retroBusy} onClick={startRetro}>
+              {retroBusy ? 'Opening…' : 'Retrospective'}
             </button>
           )}
           {isModerator ? (
