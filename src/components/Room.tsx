@@ -74,7 +74,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     }
   }, [code, participantId, onMissingIdentity]);
 
-  const rtConnected = useRealtime(`room:${code}`, refresh);
+  const { connected: rtConnected } = useRealtime(`room:${code}`, refresh);
 
   useEffect(() => {
     refresh();

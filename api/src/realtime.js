@@ -18,11 +18,16 @@ function svc() {
   return client;
 }
 
-// Client access URL that auto-joins the given group on connect (null if unconfigured).
+// Client access URL that auto-joins the given group on connect, and may publish
+// to it (used for ephemeral client-to-client events like "typing"). Null if
+// Web PubSub isn't configured.
 async function negotiate(group) {
   const s = svc();
   if (!s) return null;
-  const token = await s.getClientAccessToken({ groups: [group] });
+  const token = await s.getClientAccessToken({
+    groups: [group],
+    roles: [`webpubsub.sendToGroup.${group}`],
+  });
   return token.url;
 }
 

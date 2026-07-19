@@ -1,20 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export interface RealtimeChannel {
+  connected: boolean;
+  /** Broadcast an ephemeral event to everyone else in the group (e.g. "typing"). */
+  send: (data: unknown) => void;
+}
 
 /**
- * Subscribe to real-time "changed" pings for a group (room/board code) via Azure
- * Web PubSub and run `onMessage` on each — the caller refreshes state in response.
- * Returns whether the socket is currently connected, so the caller can slow its
- * polling fallback right down. If Web PubSub isn't configured (negotiate returns
- * no url) the socket never connects and the caller keeps its normal polling.
+ * Subscribe to a group (room/board code) via Azure Web PubSub. `onMessage` runs
+ * for each received payload — the server pushes `{ t: 'changed' }` on every
+ * mutation (caller refreshes), and clients can push their own events (e.g.
+ * `{ t: 'typing', ... }`). On (re)connect a synthetic `{ t: 'changed' }` fires so
+ * the caller resyncs. If Web PubSub isn't configured (negotiate returns no url)
+ * the socket never connects and `connected` stays false so the caller keeps
+ * polling.
  */
-export function useRealtime(group: string, onMessage: () => void): boolean {
+export function useRealtime(group: string, onMessage: (data: unknown) => void): RealtimeChannel {
   const [connected, setConnected] = useState(false);
   const onMsg = useRef(onMessage);
   onMsg.current = onMessage;
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!group) return;
-    let ws: WebSocket | null = null;
     let closed = false;
     let retry: number | undefined;
 
@@ -26,19 +34,29 @@ export function useRealtime(group: string, onMessage: () => void): boolean {
         if (!res.ok) return; // realtime not available → stay on polling
         const { url } = (await res.json()) as { url: string | null };
         if (!url || closed) return;
-        ws = new WebSocket(url, 'json.webpubsub.azure.v1');
+        const ws = new WebSocket(url, 'json.webpubsub.azure.v1');
+        wsRef.current = ws;
         ws.onopen = () => {
           setConnected(true);
-          onMsg.current(); // resync on (re)connect
+          onMsg.current({ t: 'changed' }); // resync on (re)connect
         };
-        ws.onmessage = () => onMsg.current(); // any ping = something changed
+        ws.onmessage = (e) => {
+          let frame: { type?: string; data?: unknown };
+          try {
+            frame = JSON.parse(e.data);
+          } catch {
+            return;
+          }
+          if (frame.type === 'message') onMsg.current(frame.data);
+        };
         ws.onclose = () => {
           setConnected(false);
+          wsRef.current = null;
           if (!closed) retry = window.setTimeout(connect, 3000);
         };
         ws.onerror = () => {
           try {
-            ws?.close();
+            ws.close();
           } catch {
             /* ignore */
           }
@@ -53,12 +71,27 @@ export function useRealtime(group: string, onMessage: () => void): boolean {
       closed = true;
       if (retry) window.clearTimeout(retry);
       try {
-        ws?.close();
+        wsRef.current?.close();
       } catch {
         /* ignore */
       }
+      wsRef.current = null;
     };
   }, [group]);
 
-  return connected;
+  const send = useCallback(
+    (data: unknown) => {
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'sendToGroup', group, dataType: 'json', data }));
+        } catch {
+          /* best-effort */
+        }
+      }
+    },
+    [group],
+  );
+
+  return { connected, send };
 }

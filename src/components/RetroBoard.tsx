@@ -28,8 +28,10 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [typingNames, setTypingNames] = useState<Record<string, string>>({});
   const missCount = useRef(0);
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
+  const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // No identity for this board (e.g. opened an invite link directly) → bounce to join.
   useEffect(() => {
@@ -64,7 +66,39 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     }
   }, [code, participantId, onMissingIdentity]);
 
-  const rtConnected = useRealtime(`retro:${code}`, refresh);
+  // Show a transient "X is typing…" that clears itself if no new signal arrives.
+  const showTyping = useCallback(
+    (id: string, name: string) => {
+      if (!id || id === participantId) return; // never show our own typing
+      setTypingNames((prev) => (prev[id] === name ? prev : { ...prev, [id]: name }));
+      clearTimeout(typingTimers.current[id]);
+      typingTimers.current[id] = setTimeout(() => {
+        delete typingTimers.current[id];
+        setTypingNames((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }, 2500);
+    },
+    [participantId],
+  );
+
+  const onRealtime = useCallback(
+    (data: unknown) => {
+      const d = data as { t?: string; id?: string; name?: string } | undefined;
+      if (d?.t === 'typing') showTyping(d.id ?? '', d.name ?? 'Someone');
+      else refresh();
+    },
+    [refresh, showTyping],
+  );
+
+  const { connected: rtConnected, send } = useRealtime(`retro:${code}`, onRealtime);
+
+  // Broadcast that we're typing (throttled by the caller).
+  const notifyTyping = useCallback(() => {
+    send({ t: 'typing', id: participantId, name: getIdentity(code)?.name ?? 'Someone' });
+  }, [send, participantId, code]);
 
   useEffect(() => {
     refresh();
@@ -72,6 +106,12 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     const id = setInterval(refresh, pollMs);
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
+
+  // Clear any pending typing timers on unmount.
+  useEffect(() => {
+    const timers = typingTimers.current;
+    return () => Object.values(timers).forEach(clearTimeout);
+  }, []);
 
   async function run(fn: () => Promise<{ board: RetroBoardType }>) {
     try {
@@ -196,6 +236,13 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
             ))}
           </div>
 
+          {Object.keys(typingNames).length > 0 && (
+            <div className="retro-typing">
+              {Object.values(typingNames).join(', ')}{' '}
+              {Object.keys(typingNames).length === 1 ? 'is' : 'are'} typing…
+            </div>
+          )}
+
           <section className="retro-columns">
             {board.columns.map((col) => (
               <RetroColumnView
@@ -207,6 +254,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
                 onAdd={(text) => run(() => retroApi.addNote(code, participantId, col.id, text))}
                 onEdit={(id, text) => run(() => retroApi.updateNote(code, participantId, id, { text }))}
                 onDelete={(id) => run(() => retroApi.deleteNote(code, participantId, id))}
+                onTyping={notifyTyping}
               />
             ))}
           </section>
@@ -276,6 +324,7 @@ interface ColumnProps {
   onAdd: (text: string) => void;
   onEdit: (noteId: string, text: string) => void;
   onDelete: (noteId: string) => void;
+  onTyping: () => void;
 }
 
 function RetroColumnView({
@@ -286,8 +335,10 @@ function RetroColumnView({
   onAdd,
   onEdit,
   onDelete,
+  onTyping,
 }: ColumnProps) {
   const [draft, setDraft] = useState('');
+  const lastTyping = useRef(0);
   const notes = board.notes.filter((n) => n.columnId === column.id);
 
   function add() {
@@ -295,6 +346,16 @@ function RetroColumnView({
     if (!text) return;
     setDraft('');
     onAdd(text);
+  }
+
+  // Emit a typing signal at most every 1.5s while the composer changes.
+  function handleChange(value: string) {
+    setDraft(value);
+    const now = Date.now();
+    if (now - lastTyping.current > 1500) {
+      lastTyping.current = now;
+      onTyping();
+    }
   }
 
   return (
@@ -310,7 +371,7 @@ function RetroColumnView({
           placeholder="Add your thoughts on this…"
           rows={2}
           maxLength={500}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
