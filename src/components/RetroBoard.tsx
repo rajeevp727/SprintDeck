@@ -8,8 +8,7 @@ import { toast } from './Toast';
 import { notifyPresence } from '../presence';
 import { useRealtime } from '../realtime';
 
-const pollMs = 1500; // polling fallback when real-time isn't connected
-const pollMsRt = 15000; // safety-net poll when real-time IS connected
+const pollMs = 200; // polling fallback, used only while real-time isn't connected (e.g. free-tier connection cap / outage)
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
 // misses (tab throttled, cold start, instance split) so you stay put until you
 // leave or the facilitator actually ends the board.
@@ -69,7 +68,8 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, rtConnected ? pollMsRt : pollMs);
+    if (rtConnected) return; // real-time is live — pure push, no polling
+    const id = setInterval(refresh, pollMs);
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
 

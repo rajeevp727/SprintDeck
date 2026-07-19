@@ -8,8 +8,7 @@ import AdBanner from './AdBanner';
 import { notifyPresence } from '../presence';
 import { useRealtime } from '../realtime';
 
-const POLL_MS = 1500; // polling fallback when real-time isn't connected
-const POLL_MS_RT = 15000; // safety-net poll when real-time IS connected
+const POLL_MS = 200; // polling fallback, used only while real-time isn't connected (e.g. free-tier connection cap / outage)
 // Only leave the room after this many CONSECUTIVE "not found" polls — tolerates
 // transient misses (tab loses focus & throttles, cold start, instance split) so
 // you stay put until you leave or the moderator actually ends the room.
@@ -79,7 +78,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, rtConnected ? POLL_MS_RT : POLL_MS);
+    if (rtConnected) return; // real-time is live — pure push, no polling
+    const id = setInterval(refresh, POLL_MS);
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
 
