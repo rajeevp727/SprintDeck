@@ -7,7 +7,7 @@ import AdBanner from './AdBanner';
 import { toast } from './Toast';
 import { notifyPresence } from '../presence';
 
-const pollMs = 1500;
+const pollMs = 1000;
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
 // misses (tab throttled, cold start, instance split) so you stay put until you
 // leave or the facilitator actually ends the board.

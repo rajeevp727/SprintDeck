@@ -32,12 +32,19 @@ export function ToastHost() {
     return () => window.removeEventListener(toastEvent, onToast);
   }, []);
 
+  function dismiss(id: number) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
+
   if (toasts.length === 0) return null;
   return (
     <div className="toast-host">
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast-${t.type}`}>
-          {t.message}
+          <span className="toast-msg">{t.message}</span>
+          <button className="toast-close" aria-label="Dismiss" onClick={() => dismiss(t.id)}>
+            ×
+          </button>
         </div>
       ))}
     </div>

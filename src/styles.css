@@ -952,7 +952,10 @@ input:focus {
 }
 .toast {
   pointer-events: auto;
-  padding: 0.65rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem 0.65rem 1.1rem;
   border-radius: var(--radius-sm);
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -960,6 +963,24 @@ input:focus {
   font-size: 0.9rem;
   box-shadow: var(--shadow);
   max-width: 90vw;
+}
+.toast-close {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0;
+}
+.toast-close:hover {
+  background: rgba(239, 94, 110, 0.15);
 }
 .toast-success {
   border-color: var(--green);

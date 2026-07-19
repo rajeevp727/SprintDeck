@@ -7,7 +7,7 @@ import ResultsModal from './ResultsModal';
 import AdBanner from './AdBanner';
 import { notifyPresence } from '../presence';
 
-const POLL_MS = 1500;
+const POLL_MS = 1000;
 // Only leave the room after this many CONSECUTIVE "not found" polls — tolerates
 // transient misses (tab loses focus & throttles, cold start, instance split) so
 // you stay put until you leave or the moderator actually ends the room.
