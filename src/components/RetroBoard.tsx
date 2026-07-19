@@ -7,6 +7,7 @@ import AdBanner from './AdBanner';
 import { toast } from './Toast';
 import { notifyPresence } from '../presence';
 import { useRealtime } from '../realtime';
+import { exportDoc, retroExportDoc, exportFormats } from '../export';
 
 const pollMs = 200; // polling fallback, used only while real-time isn't connected (e.g. free-tier connection cap / outage)
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
@@ -28,6 +29,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [typingNames, setTypingNames] = useState<Record<string, string>>({});
   const missCount = useRef(0);
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
@@ -203,6 +205,29 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
             <button className="ghost" onClick={copyInvite}>
               {copied ? 'Copied!' : 'Invite'}
             </button>
+          )}
+          {isFacilitator && (
+            <div className="profile">
+              <button className="ghost" title="Export the retrospective" onClick={() => setShowExport((s) => !s)}>
+                Export ▾
+              </button>
+              {showExport && (
+                <div className="profile-menu export-menu">
+                  {exportFormats.map((f) => (
+                    <button
+                      key={f.format}
+                      className="export-item"
+                      onClick={() => {
+                        exportDoc(f.format, retroExportDoc(board));
+                        setShowExport(false);
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {isFacilitator ? (
             <button className="ghost danger" onClick={endBoard}>

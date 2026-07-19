@@ -1,5 +1,5 @@
 import type { HistoryEntry } from '../types';
-import { exportCsv, exportText } from '../export';
+import { exportDoc, planningExportDoc, exportFormats } from '../export';
 
 interface Props {
   sessionName: string;
@@ -60,20 +60,16 @@ export default function ResultsModal({ sessionName, history, onClose }: Props) {
         <footer className="modal-footer">
           <span className="muted">{history.length} estimated</span>
           <div className="export-buttons">
-            <button
-              className="ghost"
-              disabled={history.length === 0}
-              onClick={() => exportText(sessionName, history)}
-            >
-              Export .txt
-            </button>
-            <button
-              className="ghost"
-              disabled={history.length === 0}
-              onClick={() => exportCsv(history)}
-            >
-              Export Excel (.csv)
-            </button>
+            {exportFormats.map((f) => (
+              <button
+                key={f.format}
+                className="ghost"
+                disabled={history.length === 0}
+                onClick={() => exportDoc(f.format, planningExportDoc(sessionName, history))}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </footer>
       </div>
