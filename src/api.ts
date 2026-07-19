@@ -76,4 +76,7 @@ export const api = {
 
   setRetro: (code: string, participantId: string, retroCode: string) =>
     request<{ session: Session }>(`/api/session/${code}/retro`, 'POST', { participantId, retroCode }),
+
+  leaveRoom: (code: string, participantId: string) =>
+    request<{ left: boolean }>(`/api/session/${code}/leave`, 'POST', { participantId }),
 };

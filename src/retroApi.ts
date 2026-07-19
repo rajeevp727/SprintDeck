@@ -44,6 +44,9 @@ export const retroApi = {
   openBoard: (code: string, participantId: string) =>
     request<{ board: RetroBoard }>(`/api/retro/${code}/open`, 'POST', { participantId }),
 
+  leave: (code: string, participantId: string) =>
+    request<{ left: boolean }>(`/api/retro/${code}/leave`, 'POST', { participantId }),
+
   end: (code: string, participantId: string) =>
     request<{ ended: boolean }>(`/api/retro/${code}/end`, 'POST', { participantId }),
 };

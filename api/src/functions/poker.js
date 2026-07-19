@@ -223,6 +223,22 @@ app.http('kickParticipant', {
   },
 });
 
+// POST /api/session/{code}/leave  { participantId }  — a member removes themselves
+app.http('leaveSession', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'session/{code}/leave',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const session = await store.loadSession(req.params.code);
+    // kickParticipant removes a non-moderator; the moderator ends the room instead.
+    if (session && store.kickParticipant(session, participantId)) {
+      await store.saveSession(session);
+    }
+    return ok({ left: true });
+  },
+});
+
 // POST /api/session/{code}/end  { participantId }   (moderator) — ends the room
 app.http('endSession', {
   methods: ['POST'],

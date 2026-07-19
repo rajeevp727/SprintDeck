@@ -5,6 +5,7 @@ import { clearIdentity, getIdentity, saveIdentity } from '../storage';
 import type { Session } from '../types';
 import ResultsModal from './ResultsModal';
 import AdBanner from './AdBanner';
+import { notifyPresence } from '../presence';
 
 const POLL_MS = 1500;
 // Only leave the room after this many CONSECUTIVE "not found" polls — tolerates
@@ -35,6 +36,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [showResults, setShowResults] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const missCount = useRef(0);
+  const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
   // No identity for this room (e.g. opened an invite link directly) → bounce to join.
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         onMissingIdentity();
         return;
       }
+      notifyPresence(s.participants, s.moderatorId === participantId, participantId, prevParticipants, 'room');
       setSession(s);
       setError('');
       setMyVote(me.vote); // keep my selected card in sync with the server
@@ -143,6 +146,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   }
 
   function leave() {
+    api.leaveRoom(code, participantId).catch(() => {}); // best-effort; leave locally regardless
     clearIdentity(code);
     onLeave();
   }

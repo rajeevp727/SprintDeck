@@ -182,6 +182,21 @@ app.http('openRetro', {
   },
 });
 
+// POST /api/retro/{code}/leave  { participantId }  — a member removes themselves
+app.http('leaveRetro', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'retro/{code}/leave',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const board = await store.loadBoard(req.params.code);
+    if (board && store.leaveBoard(board, participantId)) {
+      await store.saveBoard(board);
+    }
+    return ok({ left: true });
+  },
+});
+
 // POST /api/retro/{code}/end  { participantId }   (facilitator) — ends the board
 app.http('endRetro', {
   methods: ['POST'],

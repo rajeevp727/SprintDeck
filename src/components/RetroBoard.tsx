@@ -5,6 +5,7 @@ import type { RetroBoard as RetroBoardType, RetroColumn } from '../retroTypes';
 import RetroNote from './RetroNote';
 import AdBanner from './AdBanner';
 import { toast } from './Toast';
+import { notifyPresence } from '../presence';
 
 const pollMs = 1500;
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
@@ -27,6 +28,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [copied, setCopied] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const missCount = useRef(0);
+  const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
   // No identity for this board (e.g. opened an invite link directly) → bounce to join.
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         onMissingIdentity();
         return;
       }
+      notifyPresence(b.participants, b.facilitatorId === participantId, participantId, prevParticipants, 'retrospective');
       setBoard(b);
       setError('');
     } catch (err) {
@@ -76,6 +79,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   function leave() {
+    retroApi.leave(code, participantId).catch(() => {}); // best-effort; leave locally regardless
     clearIdentity(code);
     onLeave();
   }

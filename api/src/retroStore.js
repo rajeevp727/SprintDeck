@@ -15,8 +15,8 @@ const conn = process.env.COSMOS_CONNECTION_STRING || '';
 const dbName = 'sprintdeck';
 const containerName = 'retros';
 
-const memory = new Map(); // fallback when no connection string
-let containerPromise = null;
+const memory = new Map(); // board fallback when no connection string
+const containerCache = new Map(); // container name -> Promise<container>
 
 // A board is treated as gone when EITHER it has had no activity for boardIdleMs
 // (4h) or its total age exceeds boardMaxAgeMs (8h). Retros run longer than a
@@ -30,8 +30,7 @@ const maxNoteLen = 500;
 // by the poker room code, so the next retro for that room can review them.
 const ledgerContainerName = 'retroledger';
 const ledgerTtlSeconds = 90 * 24 * 60 * 60; // ~90 days
-const ledgerMemory = new Map(); // fallback when no connection string
-let ledgerContainerPromise = null;
+const ledgerMemory = new Map(); // ledger fallback when no connection string
 
 // Each participant is auto-assigned a colour (round-robin via the board's
 // colorSeq), so all of that person's notes share one colour — no manual picking.
@@ -44,11 +43,13 @@ function colorForSeq(seq) {
   return participantColors[seq % participantColors.length];
 }
 
-function getContainer() {
+// Cached promise for a Cosmos container (created on first use). Shared by the
+// board and ledger containers — both use partition key /code and native TTL.
+function containerFor(name, ttlSeconds) {
   if (!conn) return null;
-  if (!containerPromise) {
+  if (!containerCache.has(name)) {
     const client = new CosmosClient(conn);
-    containerPromise = (async () => {
+    const promise = (async () => {
       // Provisioned (free-tier) accounts need shared throughput; serverless
       // accounts reject it — try with, fall back to without.
       let database;
@@ -58,19 +59,21 @@ function getContainer() {
         ({ database } = await client.databases.createIfNotExists({ id: dbName }));
       }
       const { container } = await database.containers.createIfNotExists({
-        id: containerName,
+        id: name,
         partitionKey: { paths: ['/code'] },
-        defaultTtl: boardIdleMs / 1000,
+        defaultTtl: ttlSeconds,
       });
       return container;
     })().catch((e) => {
-      // Don't cache a failed init — reset so the next request retries.
-      containerPromise = null;
+      containerCache.delete(name); // don't cache a failed init — retry next time
       throw e;
     });
+    containerCache.set(name, promise);
   }
-  return containerPromise;
+  return containerCache.get(name);
 }
+
+const getContainer = () => containerFor(containerName, boardIdleMs / 1000);
 
 // Low-level persistence (code already normalized to upper-case).
 async function readRaw(code) {
@@ -118,30 +121,7 @@ async function removeRaw(code) {
 // Action-items ledger (durable, keyed by poker room code) — carries a room's
 // action items from one sprint's retro to the next.
 // ───────────────────────────────────────────────────────────────────────────
-function getLedgerContainer() {
-  if (!conn) return null;
-  if (!ledgerContainerPromise) {
-    const client = new CosmosClient(conn);
-    ledgerContainerPromise = (async () => {
-      let database;
-      try {
-        ({ database } = await client.databases.createIfNotExists({ id: dbName, throughput: 400 }));
-      } catch {
-        ({ database } = await client.databases.createIfNotExists({ id: dbName }));
-      }
-      const { container } = await database.containers.createIfNotExists({
-        id: ledgerContainerName,
-        partitionKey: { paths: ['/code'] },
-        defaultTtl: ledgerTtlSeconds,
-      });
-      return container;
-    })().catch((e) => {
-      ledgerContainerPromise = null;
-      throw e;
-    });
-  }
-  return ledgerContainerPromise;
-}
+const getLedgerContainer = () => containerFor(ledgerContainerName, ledgerTtlSeconds);
 
 // Returns the room's stored action items ([{ id, text }]) or [] if none.
 async function loadActionItems(roomCode) {
@@ -291,6 +271,14 @@ function isFacilitator(board, participantId) {
   return board.facilitatorId === participantId;
 }
 
+// A member removes themselves from the board (the facilitator ends instead).
+function leaveBoard(board, participantId) {
+  if (participantId === board.facilitatorId) return false;
+  if (!board.participants[participantId]) return false;
+  delete board.participants[participantId];
+  return true;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Note mutators — operate on a loaded board (sync); caller persists after.
 // They return true on success, false when the request is invalid/not allowed.
@@ -391,6 +379,7 @@ module.exports = {
   createBoard,
   joinBoard,
   isFacilitator,
+  leaveBoard,
   addNote,
   updateNote,
   deleteNote,
