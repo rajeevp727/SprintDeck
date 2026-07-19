@@ -182,6 +182,27 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     }
   }
 
+  // Member-only: join the room's retrospective seamlessly — reuse the name from
+  // this poker room (no re-login) and go straight to the board.
+  async function joinRetro() {
+    if (!session?.retroCode) return;
+    if (getIdentity(session.retroCode)) {
+      onEnterRetro(session.retroCode); // already joined — straight in
+      return;
+    }
+    setRetroBusy(true);
+    try {
+      const myName = getIdentity(code)?.name ?? 'Guest';
+      const res = await retroApi.joinBoard(session.retroCode, myName);
+      saveIdentity(res.board.code, res.participantId, myName);
+      onEnterRetro(res.board.code);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setRetroBusy(false);
+    }
+  }
+
   async function copyInvite() {
     // Invite link carries the code as a query param; the app reads it on open
     // and strips it from the URL, so the code isn't left in the address bar.
@@ -278,9 +299,10 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
             <button
               className="ghost"
               title="Join the retrospective"
-              onClick={() => session.retroCode && onEnterRetro(session.retroCode)}
+              disabled={retroBusy}
+              onClick={joinRetro}
             >
-              Join Retrospective
+              {retroBusy ? 'Joining…' : 'Join Retrospective'}
             </button>
           )}
           {isModerator ? (
