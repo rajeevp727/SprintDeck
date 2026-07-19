@@ -121,9 +121,11 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         </div>
         <div className="room-actions">
           <span className="status-pill">{board.participants.length} in board</span>
-          <button className="ghost" onClick={copyInvite}>
-            {copied ? 'Copied!' : 'Invite'}
-          </button>
+          {isFacilitator && (
+            <button className="ghost" onClick={copyInvite}>
+              {copied ? 'Copied!' : 'Invite'}
+            </button>
+          )}
           {isFacilitator ? (
             <button className="ghost danger" onClick={endBoard}>
               End Retrospective
