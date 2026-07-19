@@ -764,3 +764,176 @@ input:focus {
     font-size: 1.2rem;
   }
 }
+
+/* ---------- Ceremony switch (Home → Retro) ---------- */
+.ceremony-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+.ceremony-switch:hover {
+  border-color: var(--accent);
+  background: var(--panel-2);
+  transform: translateY(-1px);
+}
+.ceremony-switch-icon {
+  font-size: 1.4rem;
+}
+.ceremony-switch > span:nth-child(2) {
+  flex: 1;
+}
+.ceremony-switch-arrow {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+.footer-sep {
+  color: var(--muted);
+  margin: 0 0.5rem;
+}
+
+/* ---------- Retro board ---------- */
+.retro {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+.retro-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+  align-items: start;
+}
+.retro-col {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.retro-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.55rem;
+  border-bottom: 3px solid var(--accent);
+}
+.retro-col-title {
+  font-weight: 600;
+}
+.retro-col-count {
+  color: var(--muted);
+  font-size: 0.8rem;
+  background: var(--bg-2);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.retro-col-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.retro-col-add textarea {
+  resize: vertical;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.retro-col-add textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+.retro-col-add .ghost {
+  align-self: flex-end;
+}
+.retro-col-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Sticky note */
+.retro-note {
+  border-radius: 10px;
+  padding: 0.6rem 0.65rem 0.45rem;
+  color: #1a1a1a;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.retro-note-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  cursor: text;
+}
+.retro-note-edit {
+  width: 100%;
+  resize: vertical;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.45rem;
+  font-family: inherit;
+  font-size: 0.92rem;
+  background: rgba(255, 255, 255, 0.7);
+  color: #1a1a1a;
+}
+.retro-note-edit:focus {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+}
+.retro-note-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.retro-note-author {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.65;
+}
+.retro-note-del {
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+.retro-note-del:hover {
+  color: var(--danger);
+}
+.retro-note-colors {
+  display: flex;
+  gap: 0.3rem;
+}
+.retro-swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 0;
+}
+.retro-swatch.active {
+  outline: 2px solid rgba(0, 0, 0, 0.55);
+  outline-offset: 1px;
+}

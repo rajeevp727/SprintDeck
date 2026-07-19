@@ -1,6 +1,6 @@
 import type { JoinResult, Session } from './types';
 
-async function request<T>(url: string, method: string, body?: unknown): Promise<T> {
+export async function request<T>(url: string, method: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
     // Polling reads must never come from the HTTP cache, or other devices
