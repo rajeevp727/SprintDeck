@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { retroApi } from '../retroApi';
-import { saveIdentity } from '../storage';
+import { saveIdentity, getIdentity, getCurrentRoom } from '../storage';
 import AdBanner from './AdBanner';
 
 interface Props {
@@ -10,13 +10,43 @@ interface Props {
   onPrivacy: () => void;
 }
 
-// Retro boards are created by a room's moderator from inside the poker room and
-// shared via their /retro/CODE link. This screen is the join step for teammates
-// opening that link — name + join, no create flow.
+// The name of the poker room this person is already in (if any) — used to join
+// the retro directly, with no login step.
+function knownNameFromRoom(): string {
+  const room = getCurrentRoom();
+  return room ? getIdentity(room)?.name ?? '' : '';
+}
+
+// Retro boards are created by a room's moderator and shared via their /retro/CODE
+// link. Members already in the poker room land here and are auto-joined with
+// their existing name; only outsiders with no session see the name form.
 export default function RetroHome({ joinCode, onEnter, onExit, onPrivacy }: Props) {
-  const [name, setName] = useState('');
+  const knownName = knownNameFromRoom();
+  const [name, setName] = useState(knownName);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [autoJoining, setAutoJoining] = useState(!!knownName);
+
+  async function join(displayName: string) {
+    const res = await retroApi.joinBoard(joinCode, displayName);
+    saveIdentity(res.board.code, res.participantId, displayName.trim());
+    onEnter(res.board.code);
+  }
+
+  // Auto-join with the existing poker-room identity, no login required.
+  useEffect(() => {
+    if (!knownName) return;
+    let cancelled = false;
+    join(knownName).catch((err) => {
+      if (cancelled) return;
+      // Fall back to the manual form (e.g. board full / not found).
+      setError((err as Error).message);
+      setAutoJoining(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [joinCode, knownName]);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -24,13 +54,19 @@ export default function RetroHome({ joinCode, onEnter, onExit, onPrivacy }: Prop
     setBusy(true);
     setError('');
     try {
-      const res = await retroApi.joinBoard(joinCode, name);
-      saveIdentity(res.board.code, res.participantId, name.trim());
-      onEnter(res.board.code);
+      await join(name);
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
     }
+  }
+
+  if (autoJoining) {
+    return (
+      <div className="room-loading">
+        <p>Joining the retrospective…</p>
+      </div>
+    );
   }
 
   return (
