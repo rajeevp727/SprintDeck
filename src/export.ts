@@ -1,5 +1,6 @@
 import type { HistoryEntry } from './types';
 import type { RetroBoard } from './retroTypes';
+import { buildXlsx } from './xlsx';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Generic export: a document is a title + one or more tables. Each format
@@ -13,7 +14,7 @@ export type ExportFormat = 'txt' | 'csv' | 'excel' | 'pdf';
 export const exportFormats: { format: ExportFormat; label: string }[] = [
   { format: 'txt', label: 'Text (.txt)' },
   { format: 'csv', label: 'CSV (.csv)' },
-  { format: 'excel', label: 'Excel (.xls)' },
+  { format: 'excel', label: 'Excel (.xlsx)' },
   { format: 'pdf', label: 'PDF' },
 ];
 
@@ -29,8 +30,7 @@ export interface ExportDoc {
   tables: Table[];
 }
 
-function downloadBlob(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
+function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -39,6 +39,9 @@ function downloadBlob(content: string, filename: string, mime: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+function downloadBlob(content: string, filename: string, mime: string) {
+  saveBlob(new Blob([content], { type: mime }), filename);
 }
 
 function str(c: Cell): string {
@@ -92,12 +95,6 @@ function tablesHtml(doc: ExportDoc): string {
     .join('');
 }
 
-function toExcel(doc: ExportDoc): string {
-  return `<html><head><meta charset="utf-8"><style>table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px;text-align:left}</style></head><body><h2>${esc(
-    doc.title,
-  )}</h2>${tablesHtml(doc)}</body></html>`;
-}
-
 function printPdf(doc: ExportDoc) {
   const w = window.open('', '_blank');
   if (!w) return; // pop-up blocked
@@ -123,7 +120,7 @@ export function exportDoc(format: ExportFormat, doc: ExportDoc) {
     case 'csv':
       return downloadBlob(toCsv(doc), `${doc.filename}.csv`, 'text/csv;charset=utf-8');
     case 'excel':
-      return downloadBlob(toExcel(doc), `${doc.filename}.xls`, 'application/vnd.ms-excel');
+      return saveBlob(buildXlsx(doc.tables, doc.title), `${doc.filename}.xlsx`);
     case 'pdf':
       return printPdf(doc);
   }
