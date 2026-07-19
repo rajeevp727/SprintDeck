@@ -892,18 +892,28 @@ input:focus {
 .retro-note-del:hover {
   color: var(--danger);
 }
-.retro-note-colors {
+
+/* Participant colour legend */
+.retro-legend {
   display: flex;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--muted);
 }
-.retro-swatch {
-  width: 15px;
-  height: 15px;
+.retro-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.retro-legend-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.25);
-  padding: 0;
-}
-.retro-swatch.active {
-  outline: 2px solid rgba(0, 0, 0, 0.55);
-  outline-offset: 1px;
 }

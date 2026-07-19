@@ -26,6 +26,17 @@ const BOARD_IDLE_MS = 4 * 60 * 60 * 1000; // 4h
 const MAX_PARTICIPANTS = 30;
 const MAX_NOTE_LEN = 500;
 
+// Each participant is auto-assigned a colour (round-robin via the board's
+// colorSeq), so all of that person's notes share one colour — no manual picking.
+const PARTICIPANT_COLORS = [
+  '#ffd76a', '#a0e8a4', '#8fd0ff', '#f7a8c4', '#c9b3ff',
+  '#ffb38a', '#7fe3d4', '#ffd0e0', '#c7e59a', '#9ab8ff',
+];
+
+function colorForSeq(seq) {
+  return PARTICIPANT_COLORS[seq % PARTICIPANT_COLORS.length];
+}
+
 function getContainer() {
   if (!CONN) return null;
   if (!containerPromise) {
@@ -181,8 +192,9 @@ async function createBoard(name, facilitatorName, desiredCode) {
     columns: defaultColumns(),
     notes: [], // [{ id, columnId, authorId, authorName, text, color, createdAt }]
     participants: {
-      [pid]: { id: pid, name: (facilitatorName || '').trim() || 'Facilitator' },
+      [pid]: { id: pid, name: (facilitatorName || '').trim() || 'Facilitator', color: colorForSeq(0) },
     },
+    colorSeq: 1, // next participant's colour index (facilitator took 0)
     createdAt: now,
     lastActivity: now,
   };
@@ -197,7 +209,9 @@ async function joinBoard(code, name) {
     return { error: 'full' };
   }
   const pid = genId();
-  board.participants[pid] = { id: pid, name: (name || '').trim() || 'Guest' };
+  const seq = board.colorSeq || Object.keys(board.participants).length;
+  board.participants[pid] = { id: pid, name: (name || '').trim() || 'Guest', color: colorForSeq(seq) };
+  board.colorSeq = seq + 1;
   await saveBoard(board);
   return { board, participantId: pid };
 }
@@ -210,7 +224,7 @@ function isFacilitator(board, participantId) {
 // Note mutators — operate on a loaded board (sync); caller persists after.
 // They return true on success, false when the request is invalid/not allowed.
 // ───────────────────────────────────────────────────────────────────────────
-function addNote(board, participantId, columnId, text, color) {
+function addNote(board, participantId, columnId, text) {
   const author = board.participants[participantId];
   if (!author) return false;
   if (!board.columns.some((c) => c.id === columnId)) return false;
@@ -222,24 +236,23 @@ function addNote(board, participantId, columnId, text, color) {
     authorId: participantId,
     authorName: author.name,
     text: body.slice(0, MAX_NOTE_LEN),
-    color: color || '#ffd76a',
+    color: author.color || colorForSeq(0), // the author's auto-assigned colour
     createdAt: Date.now(),
   });
   return true;
 }
 
-// A participant may edit their own note. Text, color and column are all optional
-// partial updates.
+// A participant may edit their own note. Text and column are optional partial
+// updates. Colour is not editable — it's fixed to the author's assigned colour.
 function updateNote(board, participantId, noteId, patch) {
   const note = board.notes.find((n) => n.id === noteId);
   if (!note) return false;
-  if (note.authorId !== participantId) return false; // only the author edits text/color
+  if (note.authorId !== participantId) return false; // only the author edits their note
   if (typeof patch.text === 'string') {
     const body = patch.text.trim();
     if (!body) return false;
     note.text = body.slice(0, MAX_NOTE_LEN);
   }
-  if (typeof patch.color === 'string') note.color = patch.color;
   if (typeof patch.columnId === 'string') {
     if (!board.columns.some((c) => c.id === patch.columnId)) return false;
     note.columnId = patch.columnId;
@@ -269,6 +282,7 @@ function publicView(board) {
       .map((p) => ({
         id: p.id,
         name: p.name,
+        color: p.color || colorForSeq(0),
         isFacilitator: p.id === board.facilitatorId,
       }))
       .sort((a, b) => (a.isFacilitator === b.isFacilitator ? 0 : a.isFacilitator ? -1 : 1)),

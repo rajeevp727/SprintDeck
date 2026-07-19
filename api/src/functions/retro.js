@@ -90,17 +90,18 @@ app.http('getRetro', {
   },
 });
 
-// POST /api/retro/{code}/note  { participantId, columnId, text, color }
+// POST /api/retro/{code}/note  { participantId, columnId, text }
+// The note's colour is auto-assigned from the author — not client-supplied.
 app.http('addRetroNote', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'retro/{code}/note',
   handler: async (req) => {
-    const { participantId, columnId, text, color } = await readBody(req);
+    const { participantId, columnId, text } = await readBody(req);
     const { board, error } = await requireParticipant(req.params.code, participantId);
     if (error) return error;
 
-    if (!store.addNote(board, participantId, columnId, text, color)) {
+    if (!store.addNote(board, participantId, columnId, text)) {
       return bad('Could not add note — check the column and text');
     }
     await store.saveBoard(board);
@@ -108,17 +109,17 @@ app.http('addRetroNote', {
   },
 });
 
-// POST /api/retro/{code}/note/{noteId}  { participantId, text?, color?, columnId? }  (author)
+// POST /api/retro/{code}/note/{noteId}  { participantId, text?, columnId? }  (author)
 app.http('updateRetroNote', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'retro/{code}/note/{noteId}',
   handler: async (req) => {
-    const { participantId, text, color, columnId } = await readBody(req);
+    const { participantId, text, columnId } = await readBody(req);
     const { board, error } = await requireParticipant(req.params.code, participantId);
     if (error) return error;
 
-    if (!store.updateNote(board, participantId, req.params.noteId, { text, color, columnId })) {
+    if (!store.updateNote(board, participantId, req.params.noteId, { text, columnId })) {
       return bad('Could not update this note', 403);
     }
     await store.saveBoard(board);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { retroApi } from '../retroApi';
 import { clearIdentity, getIdentity } from '../storage';
 import type { RetroBoard as RetroBoardType, RetroColumn } from '../retroTypes';
-import RetroNote, { NOTE_COLORS } from './RetroNote';
+import RetroNote from './RetroNote';
 import AdBanner from './AdBanner';
 
 const POLL_MS = 1500;
@@ -136,6 +136,17 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         </div>
       </header>
 
+      <div className="retro-legend">
+        {board.participants.map((p) => (
+          <span key={p.id} className="retro-legend-item">
+            <span className="retro-legend-dot" style={{ background: p.color }} />
+            {p.name}
+            {p.isFacilitator && <span className="crown"> ★</span>}
+            {p.id === participantId && <span className="you"> (you)</span>}
+          </span>
+        ))}
+      </div>
+
       <section className="retro-columns">
         {board.columns.map((col) => (
           <RetroColumnView
@@ -144,9 +155,8 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
             board={board}
             participantId={participantId}
             isFacilitator={isFacilitator}
-            onAdd={(text, color) => run(() => retroApi.addNote(code, participantId, col.id, text, color))}
+            onAdd={(text) => run(() => retroApi.addNote(code, participantId, col.id, text))}
             onEdit={(id, text) => run(() => retroApi.updateNote(code, participantId, id, { text }))}
-            onColor={(id, color) => run(() => retroApi.updateNote(code, participantId, id, { color }))}
             onDelete={(id) => run(() => retroApi.deleteNote(code, participantId, id))}
           />
         ))}
@@ -164,9 +174,8 @@ interface ColumnProps {
   board: RetroBoardType;
   participantId: string;
   isFacilitator: boolean;
-  onAdd: (text: string, color: string) => void;
+  onAdd: (text: string) => void;
   onEdit: (noteId: string, text: string) => void;
-  onColor: (noteId: string, color: string) => void;
   onDelete: (noteId: string) => void;
 }
 
@@ -177,7 +186,6 @@ function RetroColumnView({
   isFacilitator,
   onAdd,
   onEdit,
-  onColor,
   onDelete,
 }: ColumnProps) {
   const [draft, setDraft] = useState('');
@@ -187,7 +195,7 @@ function RetroColumnView({
     const text = draft.trim();
     if (!text) return;
     setDraft('');
-    onAdd(text, NOTE_COLORS[0]);
+    onAdd(text);
   }
 
   return (
@@ -224,7 +232,6 @@ function RetroColumnView({
             canEdit={n.authorId === participantId}
             canDelete={n.authorId === participantId || isFacilitator}
             onEdit={(text) => onEdit(n.id, text)}
-            onColor={(color) => onColor(n.id, color)}
             onDelete={() => onDelete(n.id)}
           />
         ))}

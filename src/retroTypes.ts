@@ -17,6 +17,7 @@ export interface RetroNote {
 export interface RetroParticipant {
   id: string;
   name: string;
+  color: string;
   isFacilitator: boolean;
 }
 

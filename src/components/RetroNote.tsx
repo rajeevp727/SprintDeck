@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import type { RetroNote as RetroNoteType } from '../retroTypes';
 
-// Sticky-note palette. First entry is the default for new notes.
-export const NOTE_COLORS = ['#ffd76a', '#a0e8a4', '#8fd0ff', '#f7a8c4', '#c9b3ff', '#ffb38a'];
-
 interface Props {
   note: RetroNoteType;
   canEdit: boolean; // the author
   canDelete: boolean; // author or facilitator
   onEdit: (text: string) => void;
-  onColor: (color: string) => void;
   onDelete: () => void;
 }
 
-export default function RetroNote({ note, canEdit, canDelete, onEdit, onColor, onDelete }: Props) {
+// A sticky note. Its colour is the author's auto-assigned participant colour
+// (set server-side) — there's no manual colour picker.
+export default function RetroNote({ note, canEdit, canDelete, onEdit, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.text);
 
@@ -64,20 +62,6 @@ export default function RetroNote({ note, canEdit, canDelete, onEdit, onColor, o
           </button>
         )}
       </div>
-
-      {canEdit && (
-        <div className="retro-note-colors">
-          {NOTE_COLORS.map((c) => (
-            <button
-              key={c}
-              className={`retro-swatch ${c === note.color ? 'active' : ''}`}
-              style={{ background: c }}
-              title="Change colour"
-              onClick={() => onColor(c)}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
