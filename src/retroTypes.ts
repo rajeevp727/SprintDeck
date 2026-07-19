@@ -21,10 +21,18 @@ export interface RetroParticipant {
   isFacilitator: boolean;
 }
 
+export interface RetroCarryItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface RetroBoard {
   code: string;
   name: string;
   facilitatorId: string;
+  phase: 'review' | 'active';
+  carryOverItems: RetroCarryItem[];
   columns: RetroColumn[];
   notes: RetroNote[];
   participants: RetroParticipant[];

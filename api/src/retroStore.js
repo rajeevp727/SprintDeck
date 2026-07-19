@@ -26,6 +26,13 @@ const boardIdleMs = 4 * 60 * 60 * 1000; // 4h
 const maxParticipants = 30;
 const maxNoteLen = 500;
 
+// Action items persist across sprints in a separate, long-lived container keyed
+// by the poker room code, so the next retro for that room can review them.
+const ledgerContainerName = 'retroledger';
+const ledgerTtlSeconds = 90 * 24 * 60 * 60; // ~90 days
+const ledgerMemory = new Map(); // fallback when no connection string
+let ledgerContainerPromise = null;
+
 // Each participant is auto-assigned a colour (round-robin via the board's
 // colorSeq), so all of that person's notes share one colour — no manual picking.
 const participantColors = [
@@ -108,6 +115,63 @@ async function removeRaw(code) {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// Action-items ledger (durable, keyed by poker room code) — carries a room's
+// action items from one sprint's retro to the next.
+// ───────────────────────────────────────────────────────────────────────────
+function getLedgerContainer() {
+  if (!conn) return null;
+  if (!ledgerContainerPromise) {
+    const client = new CosmosClient(conn);
+    ledgerContainerPromise = (async () => {
+      let database;
+      try {
+        ({ database } = await client.databases.createIfNotExists({ id: dbName, throughput: 400 }));
+      } catch {
+        ({ database } = await client.databases.createIfNotExists({ id: dbName }));
+      }
+      const { container } = await database.containers.createIfNotExists({
+        id: ledgerContainerName,
+        partitionKey: { paths: ['/code'] },
+        defaultTtl: ledgerTtlSeconds,
+      });
+      return container;
+    })().catch((e) => {
+      ledgerContainerPromise = null;
+      throw e;
+    });
+  }
+  return ledgerContainerPromise;
+}
+
+// Returns the room's stored action items ([{ id, text }]) or [] if none.
+async function loadActionItems(roomCode) {
+  const key = normalize(roomCode);
+  if (!key) return [];
+  const c = getLedgerContainer();
+  if (c) {
+    try {
+      const { resource } = await (await c).item(key, key).read();
+      return resource ? resource.items || [] : [];
+    } catch (err) {
+      if (err.code === 404) return [];
+      throw err;
+    }
+  }
+  return ledgerMemory.get(key) || [];
+}
+
+async function saveActionItems(roomCode, items) {
+  const key = normalize(roomCode);
+  if (!key) return;
+  const c = getLedgerContainer();
+  if (c) {
+    await (await c).items.upsert({ id: key, code: key, items, ttl: ledgerTtlSeconds });
+  } else {
+    ledgerMemory.set(key, items);
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────────────────────────────────
 const codeChars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L ambiguity
@@ -185,11 +249,17 @@ async function createBoard(name, facilitatorName, desiredCode, roomCode) {
   }
   const pid = genId();
   const now = Date.now();
+  // Carry the room's action items from its previous retro into a review checklist.
+  const carry = await loadActionItems(roomCode);
   const board = {
     code,
     name: (name || '').trim() || 'Sprint Retrospective',
     facilitatorId: pid,
     roomCode: normalize(roomCode) || null, // parent poker room — unlinked on end
+    // Every retro opens on a review gate: the facilitator reviews last sprint's
+    // action items, then unlocks the board ('active').
+    phase: 'review', // 'review' | 'active'
+    carryOverItems: carry.map((it) => ({ id: it.id, text: it.text, done: false })),
     columns: defaultColumns(),
     notes: [], // [{ id, columnId, authorId, authorName, text, color, createdAt }]
     participants: {
@@ -270,6 +340,27 @@ function deleteNote(board, participantId, noteId) {
   return true;
 }
 
+// Review-phase mutators. During 'review' the facilitator ticks off last sprint's
+// carried-over action items, then opens the board for the new sprint.
+function toggleCarryOverItem(board, itemId) {
+  const item = (board.carryOverItems || []).find((i) => i.id === itemId);
+  if (!item) return false;
+  item.done = !item.done;
+  return true;
+}
+
+function openBoard(board) {
+  board.phase = 'active';
+}
+
+// The action items authored in this retro (the "Action items" column), captured
+// on end so the room's next retro can review them.
+function actionItemsFromBoard(board) {
+  const col = board.columns.find((c) => /action items/i.test(c.title));
+  if (!col) return [];
+  return board.notes.filter((n) => n.columnId === col.id).map((n) => ({ id: n.id, text: n.text }));
+}
+
 // Client-safe view. In this MVP every note is visible to everyone as soon as
 // it's added (no hide-until-reveal), so we return the whole board.
 function publicView(board) {
@@ -277,6 +368,8 @@ function publicView(board) {
     code: board.code,
     name: board.name,
     facilitatorId: board.facilitatorId,
+    phase: board.phase || 'active',
+    carryOverItems: board.carryOverItems || [],
     columns: board.columns,
     notes: board.notes,
     participants: Object.values(board.participants)
@@ -301,5 +394,9 @@ module.exports = {
   addNote,
   updateNote,
   deleteNote,
+  toggleCarryOverItem,
+  openBoard,
+  actionItemsFromBoard,
+  saveActionItems,
   publicView,
 };

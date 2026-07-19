@@ -146,6 +146,42 @@ app.http('deleteRetroNote', {
   },
 });
 
+// POST /api/retro/{code}/review/{itemId}  { participantId }  (facilitator) —
+// toggle a carried-over action item done/undone during the review phase.
+app.http('toggleRetroReviewItem', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'retro/{code}/review/{itemId}',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const { board, error } = await requireFacilitator(req.params.code, participantId);
+    if (error) return error;
+
+    if (!store.toggleCarryOverItem(board, req.params.itemId)) {
+      return bad('Could not update this item', 404);
+    }
+    await store.saveBoard(board);
+    return ok({ board: store.publicView(board) });
+  },
+});
+
+// POST /api/retro/{code}/open  { participantId }  (facilitator) — finish the
+// review and open the board for the new sprint.
+app.http('openRetro', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'retro/{code}/open',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const { board, error } = await requireFacilitator(req.params.code, participantId);
+    if (error) return error;
+
+    store.openBoard(board);
+    await store.saveBoard(board);
+    return ok({ board: store.publicView(board) });
+  },
+});
+
 // POST /api/retro/{code}/end  { participantId }   (facilitator) — ends the board
 app.http('endRetro', {
   methods: ['POST'],
@@ -155,6 +191,11 @@ app.http('endRetro', {
     const { participantId } = await readBody(req);
     const { board, error } = await requireFacilitator(req.params.code, participantId);
     if (error) return error;
+
+    // Persist this retro's action items so the room's next retro can review them.
+    if (board.roomCode) {
+      await store.saveActionItems(board.roomCode, store.actionItemsFromBoard(board));
+    }
 
     await store.deleteBoard(req.params.code);
 

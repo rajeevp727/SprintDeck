@@ -138,35 +138,94 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         </div>
       </header>
 
-      <div className="retro-legend">
-        {board.participants.map((p) => (
-          <span key={p.id} className="retro-legend-item">
-            <span className="retro-legend-dot" style={{ background: p.color }} />
-            {p.name}
-            {p.isFacilitator && <span className="crown"> ★</span>}
-            {p.id === participantId && <span className="you"> (you)</span>}
-          </span>
-        ))}
-      </div>
+      {board.phase === 'review' ? (
+        <ReviewPanel
+          board={board}
+          isFacilitator={isFacilitator}
+          onToggle={(id) => run(() => retroApi.reviewToggle(code, participantId, id))}
+          onOpen={() => run(() => retroApi.openBoard(code, participantId))}
+        />
+      ) : (
+        <>
+          <div className="retro-legend">
+            {board.participants.map((p) => (
+              <span key={p.id} className="retro-legend-item">
+                <span className="retro-legend-dot" style={{ background: p.color }} />
+                {p.name}
+                {p.isFacilitator && <span className="crown"> ★</span>}
+                {p.id === participantId && <span className="you"> (you)</span>}
+              </span>
+            ))}
+          </div>
 
-      <section className="retro-columns">
-        {board.columns.map((col) => (
-          <RetroColumnView
-            key={col.id}
-            column={col}
-            board={board}
-            participantId={participantId}
-            isFacilitator={isFacilitator}
-            onAdd={(text) => run(() => retroApi.addNote(code, participantId, col.id, text))}
-            onEdit={(id, text) => run(() => retroApi.updateNote(code, participantId, id, { text }))}
-            onDelete={(id) => run(() => retroApi.deleteNote(code, participantId, id))}
-          />
-        ))}
-      </section>
+          <section className="retro-columns">
+            {board.columns.map((col) => (
+              <RetroColumnView
+                key={col.id}
+                column={col}
+                board={board}
+                participantId={participantId}
+                isFacilitator={isFacilitator}
+                onAdd={(text) => run(() => retroApi.addNote(code, participantId, col.id, text))}
+                onEdit={(id, text) => run(() => retroApi.updateNote(code, participantId, id, { text }))}
+                onDelete={(id) => run(() => retroApi.deleteNote(code, participantId, id))}
+              />
+            ))}
+          </section>
+        </>
+      )}
 
       {error && <p className="error room-error">{error}</p>}
 
       <AdBanner className="ad-page" />
+    </div>
+  );
+}
+
+interface ReviewProps {
+  board: RetroBoardType;
+  isFacilitator: boolean;
+  onToggle: (itemId: string) => void;
+  onOpen: () => void;
+}
+
+// The review gate every retro opens on: the facilitator reviews last sprint's
+// action items (ticking off completed ones), then opens the board.
+function ReviewPanel({ board, isFacilitator, onToggle, onOpen }: ReviewProps) {
+  const items = board.carryOverItems;
+  return (
+    <div className="retro-review">
+      <h3 className="retro-review-title">Last sprint's action items</h3>
+      {items.length === 0 ? (
+        <p className="retro-review-empty">
+          You're all caught up — no action items carried over from your last retrospective.
+        </p>
+      ) : (
+        <ul className="retro-review-list">
+          {items.map((it) => (
+            <li key={it.id} className={it.done ? 'done' : ''}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={it.done}
+                  disabled={!isFacilitator}
+                  onChange={() => onToggle(it.id)}
+                />
+                <span>{it.text}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      {isFacilitator ? (
+        <button className="primary" onClick={onOpen}>
+          Start retrospective
+        </button>
+      ) : (
+        <p className="muted retro-review-wait">
+          The facilitator is reviewing last sprint's action items…
+        </p>
+      )}
     </div>
   );
 }

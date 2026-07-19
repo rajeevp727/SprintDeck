@@ -38,6 +38,12 @@ export const retroApi = {
       'DELETE',
     ),
 
+  reviewToggle: (code: string, participantId: string, itemId: string) =>
+    request<{ board: RetroBoard }>(`/api/retro/${code}/review/${itemId}`, 'POST', { participantId }),
+
+  openBoard: (code: string, participantId: string) =>
+    request<{ board: RetroBoard }>(`/api/retro/${code}/open`, 'POST', { participantId }),
+
   end: (code: string, participantId: string) =>
     request<{ ended: boolean }>(`/api/retro/${code}/end`, 'POST', { participantId }),
 };
