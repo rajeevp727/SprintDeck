@@ -171,7 +171,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     setRetroBusy(true);
     try {
       const myName = getIdentity(code)?.name ?? 'Facilitator';
-      const res = await retroApi.createBoard(`${session?.name ?? 'Sprint'} — Retro`, myName, '');
+      const res = await retroApi.createBoard(`${session?.name ?? 'Sprint'} — Retro`, myName, '', code);
       saveIdentity(res.board.code, res.participantId, myName);
       await api.setRetro(code, participantId, res.board.code);
       onEnterRetro(res.board.code);

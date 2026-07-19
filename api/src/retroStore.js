@@ -173,7 +173,7 @@ async function deleteBoard(code) {
   await removeRaw(normalize(code));
 }
 
-async function createBoard(name, facilitatorName, desiredCode) {
+async function createBoard(name, facilitatorName, desiredCode, roomCode) {
   let code;
   const wanted = normalize(desiredCode);
   if (wanted) {
@@ -189,6 +189,7 @@ async function createBoard(name, facilitatorName, desiredCode) {
     code,
     name: (name || '').trim() || 'Sprint Retrospective',
     facilitatorId: pid,
+    roomCode: normalize(roomCode) || null, // parent poker room — unlinked on end
     columns: defaultColumns(),
     notes: [], // [{ id, columnId, authorId, authorName, text, color, createdAt }]
     participants: {

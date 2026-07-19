@@ -2,6 +2,7 @@
 
 const { app } = require('@azure/functions');
 const store = require('../retroStore');
+const pokerStore = require('../store'); // to unlink the retro from its poker room on end
 
 // no-store so polling reads are never cached by the browser/CDN — otherwise
 // other devices render stale state until a manual refresh.
@@ -50,8 +51,8 @@ app.http('createRetro', {
   authLevel: 'anonymous',
   route: 'retro',
   handler: async (req) => {
-    const { name, facilitatorName, code } = await readBody(req);
-    const result = await store.createBoard(name, facilitatorName, code);
+    const { name, facilitatorName, code, roomCode } = await readBody(req);
+    const result = await store.createBoard(name, facilitatorName, code, roomCode);
     if (result.error === 'invalid') {
       return bad('Board code must be 3–24 letters, numbers or dashes');
     }
@@ -152,10 +153,19 @@ app.http('endRetro', {
   route: 'retro/{code}/end',
   handler: async (req) => {
     const { participantId } = await readBody(req);
-    const { error } = await requireFacilitator(req.params.code, participantId);
+    const { board, error } = await requireFacilitator(req.params.code, participantId);
     if (error) return error;
 
     await store.deleteBoard(req.params.code);
+
+    // Unlink from the poker room so members stop seeing "Join Retrospective".
+    if (board.roomCode) {
+      const session = await pokerStore.loadSession(board.roomCode);
+      if (session && session.retroCode === board.code) {
+        session.retroCode = null;
+        await pokerStore.saveSession(session);
+      }
+    }
     return ok({ ended: true });
   },
 });
