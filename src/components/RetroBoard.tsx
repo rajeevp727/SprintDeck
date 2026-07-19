@@ -6,8 +6,10 @@ import RetroNote from './RetroNote';
 import AdBanner from './AdBanner';
 import { toast } from './Toast';
 import { notifyPresence } from '../presence';
+import { useRealtime } from '../realtime';
 
-const pollMs = 1000;
+const pollMs = 1500; // polling fallback when real-time isn't connected
+const pollMsRt = 15000; // safety-net poll when real-time IS connected
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
 // misses (tab throttled, cold start, instance split) so you stay put until you
 // leave or the facilitator actually ends the board.
@@ -63,11 +65,13 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     }
   }, [code, participantId, onMissingIdentity]);
 
+  const rtConnected = useRealtime(`retro:${code}`, refresh);
+
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, pollMs);
+    const id = setInterval(refresh, rtConnected ? pollMsRt : pollMs);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, rtConnected]);
 
   async function run(fn: () => Promise<{ board: RetroBoardType }>) {
     try {

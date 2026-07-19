@@ -1,6 +1,7 @@
 'use strict';
 
 const { CosmosClient } = require('@azure/cosmos');
+const realtime = require('./realtime');
 
 // ───────────────────────────────────────────────────────────────────────────
 // Backend selection.
@@ -159,10 +160,13 @@ async function loadSession(code) {
 async function saveSession(session) {
   session.lastActivity = Date.now();
   await writeRaw(session);
+  realtime.notifyGroup('room:' + session.code); // push a "changed" ping (no-op if unconfigured)
 }
 
 async function deleteSession(code) {
-  await removeRaw(normalize(code));
+  const norm = normalize(code);
+  await removeRaw(norm);
+  realtime.notifyGroup('room:' + norm);
 }
 
 async function genUniqueCode() {

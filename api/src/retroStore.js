@@ -1,6 +1,7 @@
 'use strict';
 
 const { CosmosClient } = require('@azure/cosmos');
+const realtime = require('./realtime');
 
 // ───────────────────────────────────────────────────────────────────────────
 // Retrospective board store — parallel to store.js (planning poker) but fully
@@ -211,10 +212,13 @@ async function loadBoard(code) {
 async function saveBoard(board) {
   board.lastActivity = Date.now();
   await writeRaw(board);
+  realtime.notifyGroup('retro:' + board.code); // push a "changed" ping (no-op if unconfigured)
 }
 
 async function deleteBoard(code) {
-  await removeRaw(normalize(code));
+  const norm = normalize(code);
+  await removeRaw(norm);
+  realtime.notifyGroup('retro:' + norm);
 }
 
 async function createBoard(name, facilitatorName, desiredCode, roomCode) {
