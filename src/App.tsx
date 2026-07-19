@@ -5,6 +5,7 @@ import RetroHome from './components/RetroHome';
 import RetroBoard from './components/RetroBoard';
 import Privacy from './components/Privacy';
 import StickyAd from './components/StickyAd';
+import { ToastHost } from './components/Toast';
 import { getIdentity, getCurrentRoom, setCurrentRoom, clearCurrentRoom } from './storage';
 
 type Route =
@@ -120,6 +121,7 @@ export default function App() {
     <>
       {page}
       <StickyAd />
+      <ToastHost />
     </>
   );
 }

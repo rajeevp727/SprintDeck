@@ -4,6 +4,7 @@ import { clearIdentity, getIdentity } from '../storage';
 import type { RetroBoard as RetroBoardType, RetroColumn } from '../retroTypes';
 import RetroNote from './RetroNote';
 import AdBanner from './AdBanner';
+import { toast } from './Toast';
 
 const pollMs = 1500;
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
@@ -24,6 +25,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [board, setBoard] = useState<RetroBoardType | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const missCount = useRef(0);
 
   // No identity for this board (e.g. opened an invite link directly) → bounce to join.
@@ -49,6 +51,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         missCount.current += 1;
         if (missCount.current >= maxMisses) {
           clearIdentity(code);
+          toast('The retrospective was ended by the facilitator', 'info');
           onMissingIdentity();
         }
         return;
@@ -81,6 +84,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     if (!window.confirm('End this retrospective for everyone? This cannot be undone.')) return;
     try {
       await retroApi.end(code, participantId);
+      toast('Retrospective ended', 'success');
     } catch {
       /* even if it fails, leave locally */
     }
@@ -109,6 +113,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   const isFacilitator = board.facilitatorId === participantId;
+  const me = board.participants.find((p) => p.id === participantId);
 
   return (
     <div className="retro">
@@ -120,6 +125,31 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
           <h2>{board.name}</h2>
         </div>
         <div className="room-actions">
+          {me && (
+            <div className="profile">
+              <button
+                className="profile-btn"
+                title="Your profile"
+                style={{ background: me.color }}
+                onClick={() => setShowProfile((s) => !s)}
+              >
+                {me.name.charAt(0).toUpperCase()}
+              </button>
+              {showProfile && (
+                <div className="profile-menu">
+                  <div className="profile-name">{me.name}</div>
+                  <div className="profile-row">
+                    <span className="muted">Role</span>
+                    <span>{me.isFacilitator ? 'Facilitator' : 'Member'}</span>
+                  </div>
+                  <div className="profile-row">
+                    <span className="muted">Colour</span>
+                    <span className="profile-swatch" style={{ background: me.color }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <span className="status-pill">{board.participants.length} in board</span>
           {isFacilitator && (
             <button className="ghost" onClick={copyInvite}>
