@@ -134,7 +134,7 @@ function slug(s: string): string {
 export function planningExportDoc(sessionName: string, history: HistoryEntry[]): ExportDoc {
   return {
     title: `SprintDeck — Planning results — ${sessionName}`,
-    filename: `SprintDeck-Planning-${slug(sessionName)}`,
+    filename: `${slug(sessionName)}-planning`,
     tables: [
       {
         headers: ['#', 'Story', 'Average', 'Median', 'Min', 'Max', 'Consensus', 'Votes'],
@@ -173,7 +173,7 @@ export function retroExportDoc(board: RetroBoard): ExportDoc {
   }
   return {
     title: `SprintDeck — Retrospective — ${board.name}`,
-    filename: `SprintDeck-Retro-${slug(board.name)}`,
+    filename: slug(board.name),
     tables,
   };
 }
