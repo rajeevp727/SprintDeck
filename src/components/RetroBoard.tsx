@@ -132,7 +132,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
             </button>
           ) : (
             <button className="ghost danger" onClick={leave}>
-              Leave
+              Leave Retrospective
             </button>
           )}
         </div>
