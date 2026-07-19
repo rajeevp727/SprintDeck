@@ -1,6 +1,6 @@
 # SprintDeck
 
-Real-time sprint estimation (planning poker) for distributed teams. A moderator
+Real-time sprint estimation for distributed teams. A moderator
 creates a room, shares the code/link, the team queues stories and votes with
 Fibonacci cards — votes stay hidden until everyone's in, then the average and
 consensus reveal instantly. Runs **free/near-free** on Azure.

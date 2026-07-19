@@ -11,13 +11,13 @@ export default function Privacy({ onBack }: Props) {
 
       <h1>About SprintDeck</h1>
       <p>
-        SprintDeck is a free, real-time planning-poker tool for agile teams. A moderator creates a
+        SprintDeck is a free, real-time sprint estimation tool for agile teams. A moderator creates a
         room, shares a short code, and the team estimates backlog items together using Fibonacci
         story points. Votes stay hidden until everyone has voted, then the average is revealed —
         helping distributed teams reach consensus quickly across time zones.
       </p>
 
-      <h2>How to run a planning-poker session</h2>
+      <h2>How to run a SprintDeck session</h2>
       <ol>
         <li>The moderator creates a room and shares the room code or invite link.</li>
         <li>Team members join with their name — no sign-up required.</li>
