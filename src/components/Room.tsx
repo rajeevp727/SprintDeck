@@ -12,9 +12,6 @@ const POLL_MS = 1500;
 // transient misses (tab loses focus & throttles, cold start, instance split) so
 // you stay put until you leave or the moderator actually ends the room.
 const MAX_MISSES = 6;
-// Story planning (the queue + per-story field) is hidden for now — teams just
-// join and vote. Flip to true to bring back queued, per-story estimation.
-const SHOW_QUEUE = false;
 
 interface Props {
   code: string;
@@ -30,11 +27,9 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
-  const [queueDraft, setQueueDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const missCount = useRef(0);
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
@@ -115,29 +110,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     } catch (err) {
       setError((err as Error).message);
     }
-  }
-
-  function addQueue() {
-    const titles = queueDraft
-      .split('\n')
-      .map((t) => t.trim())
-      .filter(Boolean);
-    if (titles.length === 0) return;
-    setQueueDraft('');
-    moderatorAction(() => api.addToQueue(code, participantId, titles));
-  }
-
-  function dropOnQueueItem(targetIndex: number) {
-    if (!session || dragIndex === null || dragIndex === targetIndex) {
-      setDragIndex(null);
-      return;
-    }
-    const items = [...session.queue];
-    const [moved] = items.splice(dragIndex, 1);
-    items.splice(targetIndex, 0, moved);
-    setDragIndex(null);
-    setSession({ ...session, queue: items }); // optimistic
-    moderatorAction(() => api.reorderQueue(code, participantId, items.map((q) => q.id)));
   }
 
   function kickMember(targetId: string, targetName: string) {
@@ -237,18 +209,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   // Retro can be opened before planning starts (waiting) or once it's finished —
   // just not mid-round.
   const retroEnabled = session.status === 'waiting' || session.finished;
-
-  // Position-aware label for the Start button (first / next / last / only),
-  // based purely on the queue — stories are always pulled from it.
-  const queued = session.queue.length;
-  const done = session.history.length;
-  let startLabel = 'Start voting';
-  if (queued > 0) {
-    if (done === 0 && queued === 1) startLabel = 'Start story';
-    else if (done === 0) startLabel = 'Start first story';
-    else if (queued === 1) startLabel = 'Start last story';
-    else startLabel = 'Start next story';
-  }
 
   return (
     <div className="room">
@@ -378,21 +338,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       {isModerator && (
         <>
           <div className="panel">
-            {SHOW_QUEUE && (
-              <input
-                className="story-input"
-                value={session.story}
-                placeholder="Current story — add tickets to the queue, then Start"
-                readOnly
-              />
-            )}
             <div className="panel-buttons">
               {session.status === 'waiting' && (
                 <button
                   className="primary"
                   onClick={() => moderatorAction(() => api.start(code, participantId, ''))}
                 >
-                  {startLabel}
+                  Start voting
                 </button>
               )}
               {session.status === 'voting' && (
@@ -417,7 +369,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
                     className="primary"
                     onClick={() => moderatorAction(() => api.next(code, participantId))}
                   >
-                    {queued > 0 ? 'Next story' : 'Next Vote'}
+                    Next Vote
                   </button>
                   <button
                     className="ghost"
@@ -435,53 +387,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
               )}
             </div>
           </div>
-
-          {/* Story queue */}
-          {SHOW_QUEUE && (
-          <div className="queue-panel">
-            <div className="queue-head">
-              <span className="queue-title">Story queue</span>
-              <span className="muted">{session.queue.length} queued</span>
-            </div>
-            {session.queue.length > 0 && (
-              <ul className="queue-list">
-                {session.queue.map((q, i) => (
-                  <li
-                    key={q.id}
-                    draggable
-                    onDragStart={() => setDragIndex(i)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => dropOnQueueItem(i)}
-                    onDragEnd={() => setDragIndex(null)}
-                    className={dragIndex === i ? 'dragging' : ''}
-                  >
-                    <span className="q-handle" title="Drag to reorder">⠿</span>
-                    <span className="q-num">{i + 1}</span>
-                    <span className="q-title">{q.title}</span>
-                    <button
-                      className="q-remove"
-                      title="Remove"
-                      onClick={() => moderatorAction(() => api.removeFromQueue(code, participantId, q.id))}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="queue-add">
-              <textarea
-                value={queueDraft}
-                placeholder="Paste stories — one per line — to add to the queue"
-                rows={2}
-                onChange={(e) => setQueueDraft(e.target.value)}
-              />
-              <button className="ghost" disabled={!queueDraft.trim()} onClick={addQueue}>
-                Add to queue
-              </button>
-            </div>
-          </div>
-          )}
         </>
       )}
 

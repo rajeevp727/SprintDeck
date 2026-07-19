@@ -510,84 +510,6 @@ input:focus {
   font-weight: 700;
 }
 
-/* Story queue */
-.queue-panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-.queue-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.6rem;
-}
-.queue-title {
-  font-weight: 600;
-}
-.queue-list {
-  list-style: none;
-  margin: 0 0 0.75rem;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.queue-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.45rem 0.6rem;
-  cursor: grab;
-}
-.queue-list li.dragging {
-  opacity: 0.4;
-}
-.q-handle {
-  color: var(--muted);
-  cursor: grab;
-  user-select: none;
-  font-size: 1rem;
-  line-height: 1;
-}
-.q-num {
-  color: var(--muted);
-  font-size: 0.8rem;
-  min-width: 1.2rem;
-}
-.q-title {
-  flex: 1;
-}
-.q-remove {
-  background: transparent;
-  border: none;
-  color: var(--danger);
-  font-size: 1.2rem;
-  line-height: 1;
-  padding: 0 0.3rem;
-}
-.queue-add {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
-}
-.queue-add textarea {
-  flex: 1;
-  resize: vertical;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 0.6rem 0.7rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-}
-
 /* Results modal */
 .modal-overlay {
   position: fixed;
@@ -680,16 +602,6 @@ input:focus {
 }
 .panel-buttons .primary {
   min-width: 150px;
-}
-.story-input {
-  flex: 1;
-  min-width: 220px;
-  cursor: default;
-}
-/* read-only display field shouldn't glow on focus like an editable input */
-.story-input:focus {
-  box-shadow: none;
-  border-color: var(--line);
 }
 .panel-buttons {
   display: flex;
