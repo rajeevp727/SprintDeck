@@ -36,6 +36,7 @@ export interface Session {
   story: string;
   status: SessionStatus;
   finished: boolean;
+  retroCode: string | null;
   deck: string[];
   moderatorId: string;
   participants: Participant[];

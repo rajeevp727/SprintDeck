@@ -5,13 +5,13 @@ const store = require('../retroStore');
 
 // no-store so polling reads are never cached by the browser/CDN — otherwise
 // other devices render stale state until a manual refresh.
-const NO_CACHE = { 'Cache-Control': 'no-store' };
+const noCache = { 'Cache-Control': 'no-store' };
 
 function ok(body) {
-  return { status: 200, jsonBody: body, headers: NO_CACHE };
+  return { status: 200, jsonBody: body, headers: noCache };
 }
 function bad(message, status = 400) {
-  return { status, jsonBody: { error: message }, headers: NO_CACHE };
+  return { status, jsonBody: { error: message }, headers: noCache };
 }
 
 async function readBody(req) {
@@ -71,7 +71,7 @@ app.http('joinRetro', {
     const result = await store.joinBoard(req.params.code, name);
     if (result.error === 'not_found') return bad('Board not found', 404);
     if (result.error === 'full') {
-      return bad(`This board is full (max ${store.MAX_PARTICIPANTS} members)`, 409);
+      return bad(`This board is full (max ${store.maxParticipants} members)`, 409);
     }
     const { board, participantId } = result;
     return ok({ participantId, board: store.publicView(board) });

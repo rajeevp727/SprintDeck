@@ -5,11 +5,11 @@ import type { RetroBoard as RetroBoardType, RetroColumn } from '../retroTypes';
 import RetroNote from './RetroNote';
 import AdBanner from './AdBanner';
 
-const POLL_MS = 1500;
+const pollMs = 1500;
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
 // misses (tab throttled, cold start, instance split) so you stay put until you
 // leave or the facilitator actually ends the board.
-const MAX_MISSES = 6;
+const maxMisses = 6;
 
 interface Props {
   code: string;
@@ -47,7 +47,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
       const msg = (err as Error).message;
       if (msg.toLowerCase().includes('not found')) {
         missCount.current += 1;
-        if (missCount.current >= MAX_MISSES) {
+        if (missCount.current >= maxMisses) {
           clearIdentity(code);
           onMissingIdentity();
         }
@@ -59,7 +59,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, POLL_MS);
+    const id = setInterval(refresh, pollMs);
     return () => clearInterval(id);
   }, [refresh]);
 
@@ -78,7 +78,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   async function endBoard() {
-    if (!window.confirm('End this retro for everyone? This cannot be undone.')) return;
+    if (!window.confirm('End this retrospective for everyone? This cannot be undone.')) return;
     try {
       await retroApi.end(code, participantId);
     } catch {
@@ -126,7 +126,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
           </button>
           {isFacilitator ? (
             <button className="ghost danger" onClick={endBoard}>
-              End retro
+              End Retrospective
             </button>
           ) : (
             <button className="ghost danger" onClick={leave}>
@@ -208,7 +208,7 @@ function RetroColumnView({
       <div className="retro-col-add">
         <textarea
           value={draft}
-          placeholder={`Add to “${column.title}”…`}
+          placeholder="Add your thoughts on this…"
           rows={2}
           maxLength={500}
           onChange={(e) => setDraft(e.target.value)}

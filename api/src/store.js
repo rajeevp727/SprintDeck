@@ -194,6 +194,7 @@ async function createSession(name, moderatorName, desiredCode) {
     story: '',
     status: 'waiting', // 'waiting' | 'voting' | 'revealed'
     finished: false, // moderator clicked Finish → unlocks Results
+    retroCode: null, // retro board opened for this room (shared so members get a Join button)
     currentEntryId: null, // history entry id for the story being estimated
     deck: DECK,
     participants: {
@@ -349,6 +350,7 @@ function publicView(session, requesterId) {
     story: session.story,
     status: session.status,
     finished: !!session.finished,
+    retroCode: session.retroCode ?? null,
     deck: session.deck,
     moderatorId: session.moderatorId,
     participants,

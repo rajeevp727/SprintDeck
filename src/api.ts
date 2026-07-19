@@ -73,4 +73,7 @@ export const api = {
 
   finish: (code: string, participantId: string) =>
     request<{ session: Session }>(`/api/session/${code}/finish`, 'POST', { participantId }),
+
+  setRetro: (code: string, participantId: string, retroCode: string) =>
+    request<{ session: Session }>(`/api/session/${code}/retro`, 'POST', { participantId, retroCode }),
 };

@@ -257,3 +257,39 @@ app.http('nextStory', {
     return ok({ session: store.publicView(session, participantId) });
   },
 });
+
+// POST /api/session/{code}/finish  { participantId }   (moderator) — mark the
+// session finished (estimation done; unlocks Results). Was missing, so the
+// frontend's Finish button used to 404.
+app.http('finishSession', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'session/{code}/finish',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const { session, error } = await requireModerator(req.params.code, participantId);
+    if (error) return error;
+
+    session.finished = true;
+    await store.saveSession(session);
+    return ok({ session: store.publicView(session, participantId) });
+  },
+});
+
+// POST /api/session/{code}/retro  { participantId, retroCode }   (moderator) —
+// record the retro board opened for this room so every member's client sees it
+// (via polling) and can show a "Join Retro" button.
+app.http('setRetro', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'session/{code}/retro',
+  handler: async (req) => {
+    const { participantId, retroCode } = await readBody(req);
+    const { session, error } = await requireModerator(req.params.code, participantId);
+    if (error) return error;
+
+    session.retroCode = String(retroCode || '').trim().toUpperCase() || null;
+    await store.saveSession(session);
+    return ok({ session: store.publicView(session, participantId) });
+  },
+});

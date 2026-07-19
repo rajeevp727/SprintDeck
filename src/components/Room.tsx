@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { retroApi } from '../retroApi';
-import { clearIdentity, getIdentity, saveIdentity, getRoomRetro, setRoomRetro } from '../storage';
+import { clearIdentity, getIdentity, saveIdentity } from '../storage';
 import type { Session } from '../types';
 import ResultsModal from './ResultsModal';
 import AdBanner from './AdBanner';
@@ -159,12 +159,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     onLeave();
   }
 
-  // Moderator-only: spin up (or reopen) a retrospective board for this room and
-  // jump to it. The board has its own /retro/CODE URL to share with the team.
+  // Moderator-only: open the room's retrospective. If one already exists (its
+  // code is broadcast on the session) just go to it; otherwise create the board,
+  // record its code on the session so every member gets a "Join Retrospective"
+  // button, and jump in. The board has its own /retro/CODE URL.
   async function startRetro() {
-    const existing = getRoomRetro(code);
-    if (existing) {
-      onEnterRetro(existing);
+    if (session?.retroCode) {
+      onEnterRetro(session.retroCode);
       return;
     }
     setRetroBusy(true);
@@ -172,10 +173,11 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       const myName = getIdentity(code)?.name ?? 'Facilitator';
       const res = await retroApi.createBoard(`${session?.name ?? 'Sprint'} — Retro`, myName, '');
       saveIdentity(res.board.code, res.participantId, myName);
-      setRoomRetro(code, res.board.code);
+      await api.setRetro(code, participantId, res.board.code);
       onEnterRetro(res.board.code);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
       setRetroBusy(false);
     }
   }
@@ -247,9 +249,32 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
               {copied ? 'Copied!' : 'Invite'}
             </button>
           )}
-          {isModerator && (
-            <button className="ghost" title="Open a Sprint Retrospective board" disabled={retroBusy} onClick={startRetro}>
-              {retroBusy ? 'Opening…' : 'Retrospective'}
+          {isModerator &&
+            (session.retroCode ? (
+              <button className="ghost" title="Open the retrospective board" onClick={startRetro}>
+                Open Retrospective
+              </button>
+            ) : (
+              <button
+                className="ghost"
+                disabled={!session.finished || retroBusy}
+                title={
+                  session.finished
+                    ? 'Start a Sprint Retrospective'
+                    : 'Finish sprint planning to enable the retrospective'
+                }
+                onClick={startRetro}
+              >
+                {retroBusy ? 'Opening…' : 'Retrospective'}
+              </button>
+            ))}
+          {!isModerator && session.retroCode && (
+            <button
+              className="ghost"
+              title="Join the retrospective"
+              onClick={() => session.retroCode && onEnterRetro(session.retroCode)}
+            >
+              Join Retrospective
             </button>
           )}
           {isModerator ? (

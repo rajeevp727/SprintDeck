@@ -9,51 +9,51 @@ const { CosmosClient } = require('@azure/cosmos');
 // Boards live in a SEPARATE Cosmos container ("retros") in the same database
 // ("sprintdeck"). If no COSMOS_CONNECTION_STRING is configured it falls back to
 // an in-memory Map (single instance, local dev). Cosmos native TTL auto-deletes
-// idle boards (see BOARD_IDLE_MS).
+// idle boards (see boardIdleMs).
 // ───────────────────────────────────────────────────────────────────────────
-const CONN = process.env.COSMOS_CONNECTION_STRING || '';
-const DB_NAME = 'sprintdeck';
-const CONTAINER_NAME = 'retros';
+const conn = process.env.COSMOS_CONNECTION_STRING || '';
+const dbName = 'sprintdeck';
+const containerName = 'retros';
 
 const memory = new Map(); // fallback when no connection string
 let containerPromise = null;
 
-// A board is treated as gone when EITHER it has had no activity for
-// BOARD_IDLE_MS (4h) or its total age exceeds BOARD_MAX_AGE_MS (8h). Retros run
-// longer than a poker round, so these are more generous than the poker limits.
-const BOARD_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8h
-const BOARD_IDLE_MS = 4 * 60 * 60 * 1000; // 4h
-const MAX_PARTICIPANTS = 30;
-const MAX_NOTE_LEN = 500;
+// A board is treated as gone when EITHER it has had no activity for boardIdleMs
+// (4h) or its total age exceeds boardMaxAgeMs (8h). Retros run longer than a
+// poker round, so these are more generous than the poker limits.
+const boardMaxAgeMs = 8 * 60 * 60 * 1000; // 8h
+const boardIdleMs = 4 * 60 * 60 * 1000; // 4h
+const maxParticipants = 30;
+const maxNoteLen = 500;
 
 // Each participant is auto-assigned a colour (round-robin via the board's
 // colorSeq), so all of that person's notes share one colour — no manual picking.
-const PARTICIPANT_COLORS = [
+const participantColors = [
   '#ffd76a', '#a0e8a4', '#8fd0ff', '#f7a8c4', '#c9b3ff',
   '#ffb38a', '#7fe3d4', '#ffd0e0', '#c7e59a', '#9ab8ff',
 ];
 
 function colorForSeq(seq) {
-  return PARTICIPANT_COLORS[seq % PARTICIPANT_COLORS.length];
+  return participantColors[seq % participantColors.length];
 }
 
 function getContainer() {
-  if (!CONN) return null;
+  if (!conn) return null;
   if (!containerPromise) {
-    const client = new CosmosClient(CONN);
+    const client = new CosmosClient(conn);
     containerPromise = (async () => {
       // Provisioned (free-tier) accounts need shared throughput; serverless
       // accounts reject it — try with, fall back to without.
       let database;
       try {
-        ({ database } = await client.databases.createIfNotExists({ id: DB_NAME, throughput: 400 }));
+        ({ database } = await client.databases.createIfNotExists({ id: dbName, throughput: 400 }));
       } catch {
-        ({ database } = await client.databases.createIfNotExists({ id: DB_NAME }));
+        ({ database } = await client.databases.createIfNotExists({ id: dbName }));
       }
       const { container } = await database.containers.createIfNotExists({
-        id: CONTAINER_NAME,
+        id: containerName,
         partitionKey: { paths: ['/code'] },
-        defaultTtl: BOARD_IDLE_MS / 1000,
+        defaultTtl: boardIdleMs / 1000,
       });
       return container;
     })().catch((e) => {
@@ -87,7 +87,7 @@ async function writeRaw(board) {
       id: board.code,
       code: board.code,
       doc: board,
-      ttl: BOARD_IDLE_MS / 1000, // refresh idle expiry on every write
+      ttl: boardIdleMs / 1000, // refresh idle expiry on every write
     });
   } else {
     memory.set(board.code, board);
@@ -110,11 +110,11 @@ async function removeRaw(code) {
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────────────────────────────────
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L ambiguity
+const codeChars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L ambiguity
 
 function randomCode() {
   let code = '';
-  for (let i = 0; i < 5; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  for (let i = 0; i < 5; i++) code += codeChars[Math.floor(Math.random() * codeChars.length)];
   return code;
 }
 
@@ -128,7 +128,7 @@ function normalize(code) {
 
 function isExpired(b) {
   const now = Date.now();
-  return now - b.lastActivity > BOARD_IDLE_MS || now - b.createdAt > BOARD_MAX_AGE_MS;
+  return now - b.lastActivity > boardIdleMs || now - b.createdAt > boardMaxAgeMs;
 }
 
 async function genUniqueCode() {
@@ -139,7 +139,7 @@ async function genUniqueCode() {
   return code;
 }
 
-const CODE_RE = /^[A-Z0-9-]{3,24}$/;
+const codeRe = /^[A-Z0-9-]{3,24}$/;
 
 // Default retro template — three classic columns. Each carries an accent color
 // used as the column header tint on the client.
@@ -177,7 +177,7 @@ async function createBoard(name, facilitatorName, desiredCode) {
   let code;
   const wanted = normalize(desiredCode);
   if (wanted) {
-    if (!CODE_RE.test(wanted)) return { error: 'invalid' };
+    if (!codeRe.test(wanted)) return { error: 'invalid' };
     if (await loadBoard(wanted)) return { error: 'taken' };
     code = wanted;
   } else {
@@ -205,7 +205,7 @@ async function createBoard(name, facilitatorName, desiredCode) {
 async function joinBoard(code, name) {
   const board = await loadBoard(code);
   if (!board) return { error: 'not_found' };
-  if (Object.keys(board.participants).length >= MAX_PARTICIPANTS) {
+  if (Object.keys(board.participants).length >= maxParticipants) {
     return { error: 'full' };
   }
   const pid = genId();
@@ -235,7 +235,7 @@ function addNote(board, participantId, columnId, text) {
     columnId,
     authorId: participantId,
     authorName: author.name,
-    text: body.slice(0, MAX_NOTE_LEN),
+    text: body.slice(0, maxNoteLen),
     color: author.color || colorForSeq(0), // the author's auto-assigned colour
     createdAt: Date.now(),
   });
@@ -251,7 +251,7 @@ function updateNote(board, participantId, noteId, patch) {
   if (typeof patch.text === 'string') {
     const body = patch.text.trim();
     if (!body) return false;
-    note.text = body.slice(0, MAX_NOTE_LEN);
+    note.text = body.slice(0, maxNoteLen);
   }
   if (typeof patch.columnId === 'string') {
     if (!board.columns.some((c) => c.id === patch.columnId)) return false;
@@ -290,7 +290,7 @@ function publicView(board) {
 }
 
 module.exports = {
-  MAX_PARTICIPANTS,
+  maxParticipants,
   loadBoard,
   saveBoard,
   deleteBoard,
