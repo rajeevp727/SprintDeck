@@ -208,6 +208,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const voters = session.participants.filter((p) => p.id !== session.moderatorId);
   const voted = voters.filter((p) => p.hasVoted).length;
   const total = voters.length;
+  const moderator = session.participants.find((p) => p.isModerator);
   // Retro can be opened before planning starts (waiting) or once it's finished —
   // just not mid-round.
   const retroEnabled = session.status === 'waiting' || session.finished;
@@ -295,6 +296,22 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       </header>
 
       <section className="participants">
+        {moderator && (
+          <div className="seat">
+            <div className="seat-name">
+              <span className="crown" title="Moderator">★</span>
+              {moderator.name}
+              {moderator.id === participantId ? (
+                <span className="you"> (you)</span>
+              ) : (
+                <span className="you"> (Moderator)</span>
+              )}
+            </div>
+            <div className="seat-card facilitator" title="Facilitator — doesn't vote">
+              <span className="seat-host">★</span>
+            </div>
+          </div>
+        )}
         {voters.map((p) => {
           const showFace = session.status !== 'revealed';
           return (

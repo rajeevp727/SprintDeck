@@ -455,6 +455,14 @@ input:focus {
 .seat-thinking {
   opacity: 0.7;
 }
+.seat-card.facilitator {
+  background: linear-gradient(135deg, rgba(79, 124, 255, 0.16), rgba(124, 92, 255, 0.16));
+  border-color: var(--accent);
+}
+.seat-host {
+  font-size: 1.9rem;
+  color: #f2c14e;
+}
 
 /* Result */
 .result {
