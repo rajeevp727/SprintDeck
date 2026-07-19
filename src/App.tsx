@@ -80,7 +80,10 @@ export default function App() {
   }
   function goRetro(code: string) {
     const c = code.toUpperCase();
-    go(`/retro/${c}`, { kind: 'retro', code: c }); // keep the code in the URL
+    // Straight to the board if you already have an identity for it (moderator, or
+    // a member who just joined); otherwise show the join screen first.
+    const next: Route = getIdentity(c) ? { kind: 'retro', code: c } : { kind: 'retroJoin', code: c };
+    go(`/retro/${c}`, next); // keep the code in the URL
   }
   function goHome() {
     clearCurrentRoom();

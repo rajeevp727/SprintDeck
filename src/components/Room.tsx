@@ -204,8 +204,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     );
   }
 
-  const voted = session.participants.filter((p) => p.hasVoted).length;
-  const total = session.participants.length;
+  // The moderator facilitates and does not vote — count only non-moderators.
+  const voters = session.participants.filter((p) => p.id !== session.moderatorId);
+  const voted = voters.filter((p) => p.hasVoted).length;
+  const total = voters.length;
+  // Retro can be opened before planning starts (waiting) or once it's finished —
+  // just not mid-round.
+  const retroEnabled = session.status === 'waiting' || session.finished;
 
   // Position-aware label for the Start button (first / next / last / only),
   // based purely on the queue — stories are always pulled from it.
@@ -257,9 +262,9 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
             ) : (
               <button
                 className="ghost"
-                disabled={!session.finished || retroBusy}
+                disabled={!retroEnabled || retroBusy}
                 title={
-                  session.finished
+                  retroEnabled
                     ? 'Start a Sprint Retrospective'
                     : 'Finish sprint planning to enable the retrospective'
                 }
@@ -290,7 +295,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       </header>
 
       <section className="participants">
-        {session.participants.map((p) => {
+        {voters.map((p) => {
           const showFace = session.status !== 'revealed';
           return (
             <div key={p.id} className={`seat ${p.hasVoted ? 'voted' : ''}`}>
@@ -441,21 +446,23 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         <p className="wait-msg">Waiting for the moderator to start voting…</p>
       )}
 
-      {/* The deck */}
-      <section className={`deck ${session.status === 'voting' ? '' : 'disabled'}`}>
-        {session.deck.map((card) => (
-          <button
-            key={card}
-            className={`poker-card ${myVote === card ? 'selected' : ''}`}
-            disabled={session.status !== 'voting'}
-            onClick={() => castVote(card)}
-          >
-            <span className="corner tl">{card}</span>
-            <span className="face">{card}</span>
-            <span className="corner br">{card}</span>
-          </button>
-        ))}
-      </section>
+      {/* The deck — members vote; the moderator only facilitates */}
+      {!isModerator && (
+        <section className={`deck ${session.status === 'voting' ? '' : 'disabled'}`}>
+          {session.deck.map((card) => (
+            <button
+              key={card}
+              className={`poker-card ${myVote === card ? 'selected' : ''}`}
+              disabled={session.status !== 'voting'}
+              onClick={() => castVote(card)}
+            >
+              <span className="corner tl">{card}</span>
+              <span className="face">{card}</span>
+              <span className="corner br">{card}</span>
+            </button>
+          ))}
+        </section>
+      )}
 
       {error && <p className="error room-error">{error}</p>}
 
