@@ -671,6 +671,12 @@ input:focus {
   line-height: 1;
   padding: 0;
   vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.story-banner:hover .story-close,
+.story-close:focus-visible {
+  opacity: 1;
 }
 .story-close:hover {
   background: var(--danger);
