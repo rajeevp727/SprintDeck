@@ -639,7 +639,7 @@ input:focus {
   flex: 1;
   background: transparent;
   border: none;
-  padding: 0.72rem 0.4rem;
+  padding: 0.72rem 0.4rem 0.72rem 0.15rem;
   color: var(--text);
   font-size: 1rem;
 }
@@ -647,9 +647,10 @@ input:focus {
   box-shadow: none;
 }
 .story-banner {
+  position: relative;
   text-align: center;
   margin: 1.25rem auto 0;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 2.5rem;
   max-width: 640px;
   background: var(--bg-2);
   border: 1px solid var(--line);
@@ -660,7 +661,10 @@ input:focus {
   color: var(--text);
 }
 .story-close {
-  margin-left: 0.6rem;
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -670,7 +674,6 @@ input:focus {
   font-size: 1rem;
   line-height: 1;
   padding: 0;
-  vertical-align: middle;
   opacity: 0;
   transition: opacity 0.15s;
 }
