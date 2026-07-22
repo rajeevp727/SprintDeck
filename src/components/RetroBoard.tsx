@@ -390,24 +390,27 @@ function RetroColumnView({
         <span className="retro-col-count">{notes.length}</span>
       </div>
 
-      <div className="retro-col-add">
-        <textarea
-          value={draft}
-          placeholder="Add your thoughts on this…"
-          rows={2}
-          maxLength={500}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              add();
-            }
-          }}
-        />
-        <button className="ghost" disabled={!draft.trim()} onClick={add}>
-          Add
-        </button>
-      </div>
+      {/* The facilitator is read-only — only team members add notes. */}
+      {!isFacilitator && (
+        <div className="retro-col-add">
+          <textarea
+            value={draft}
+            placeholder="Add your thoughts on this…"
+            rows={2}
+            maxLength={500}
+            onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                add();
+              }
+            }}
+          />
+          <button className="ghost" disabled={!draft.trim()} onClick={add}>
+            Add
+          </button>
+        </div>
+      )}
 
       <div className="retro-col-notes">
         {notes.map((n) => (
