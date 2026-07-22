@@ -616,6 +616,23 @@ input:focus {
   color: var(--muted);
   margin: 1.5rem 0;
 }
+.ticket-input {
+  width: 100%;
+  max-width: 420px;
+}
+.story-banner {
+  text-align: center;
+  margin: 1.25rem auto 0;
+  padding: 0.5rem 1rem;
+  max-width: 640px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+}
+.story-banner strong {
+  color: var(--text);
+}
 
 /* The deck */
 .deck {

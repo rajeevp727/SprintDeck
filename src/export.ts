@@ -137,7 +137,7 @@ export function planningExportDoc(sessionName: string, history: HistoryEntry[]):
     filename: `${slug(sessionName)}-planning`,
     tables: [
       {
-        headers: ['#', 'Story', 'Average', 'Median', 'Min', 'Max', 'Consensus', 'Votes'],
+        headers: ['#', 'Ticket', 'Average', 'Median', 'Min', 'Max', 'Consensus', 'Votes'],
         rows: history.map((h, i) => [
           i + 1,
           h.title,

@@ -236,21 +236,19 @@ app.http('endSession', {
   },
 });
 
-// POST /api/session/{code}/next  { participantId }   (moderator) — advance to the
-// next queued story (the current result was already saved on reveal).
+// POST /api/session/{code}/next  { participantId, story }   (moderator) — start the
+// next round for the given ticket (the current result was already saved on reveal;
+// history is preserved so every round accumulates in the results).
 app.http('nextStory', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'session/{code}/next',
   handler: async (req) => {
-    const { participantId } = await readBody(req);
+    const { participantId, story } = await readBody(req);
     const { session, error } = await requireModerator(req.params.code, participantId);
     if (error) return error;
 
-    // Save the current result (done on reveal) was kept; start the next round —
-    // the next queued story if any, otherwise a fresh auto-numbered round.
-    // History is preserved so every round accumulates in the results.
-    store.startStory(session);
+    store.startStory(session, story);
     await store.saveSession(session);
     return ok({ session: store.publicView(session, participantId) });
   },

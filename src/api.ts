@@ -47,8 +47,8 @@ export const api = {
   reset: (code: string, participantId: string) =>
     request<{ session: Session }>(`/api/session/${code}/reset`, 'POST', { participantId }),
 
-  next: (code: string, participantId: string) =>
-    request<{ session: Session }>(`/api/session/${code}/next`, 'POST', { participantId }),
+  next: (code: string, participantId: string, story: string) =>
+    request<{ session: Session }>(`/api/session/${code}/next`, 'POST', { participantId, story }),
 
   end: (code: string, participantId: string) =>
     request<{ ended: boolean }>(`/api/session/${code}/end`, 'POST', { participantId }),

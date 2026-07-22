@@ -28,6 +28,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
+  const [ticket, setTicket] = useState('');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -114,6 +115,17 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     } catch (err) {
       setError((err as Error).message);
     }
+  }
+
+  // Moderator names the ticket, then opens the round so the team knows what
+  // they're voting on; the ticket is saved into the results on reveal.
+  async function startVoting() {
+    await moderatorAction(() => api.start(code, participantId, ticket.trim()));
+    setTicket('');
+  }
+  async function nextTicket() {
+    await moderatorAction(() => api.next(code, participantId, ticket.trim()));
+    setTicket('');
   }
 
   function kickMember(targetId: string, targetName: string) {
@@ -285,6 +297,12 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         </div>
       </header>
 
+      {session.status !== 'waiting' && session.story && (
+        <div className="story-banner">
+          Voting on <strong>{session.story}</strong>
+        </div>
+      )}
+
       <section className="participants">
         {moderator && (
           <div className="seat">
@@ -342,12 +360,18 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       {isModerator && (
         <>
           <div className="panel">
+            {(session.status === 'waiting' || session.status === 'revealed') && (
+              <input
+                className="ticket-input"
+                value={ticket}
+                onChange={(e) => setTicket(e.target.value)}
+                placeholder="Ticket name / number (e.g. ENG-1234)"
+                maxLength={80}
+              />
+            )}
             <div className="panel-buttons">
               {session.status === 'waiting' && (
-                <button
-                  className="primary"
-                  onClick={() => moderatorAction(() => api.start(code, participantId, ''))}
-                >
+                <button className="primary" onClick={startVoting}>
                   Start voting
                 </button>
               )}
@@ -369,11 +393,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
               )}
               {session.status === 'revealed' && (
                 <>
-                  <button
-                    className="primary"
-                    onClick={() => moderatorAction(() => api.next(code, participantId))}
-                  >
-                    Next Vote
+                  <button className="primary" onClick={nextTicket}>
+                    Next ticket
                   </button>
                   <button
                     className="ghost"
