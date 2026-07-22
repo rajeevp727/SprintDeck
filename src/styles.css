@@ -618,7 +618,7 @@ input:focus {
 }
 .ticket-input {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   width: 100%;
   max-width: 420px;
   background: var(--bg-2);
@@ -633,6 +633,7 @@ input:focus {
 .ticket-prefix {
   color: var(--muted);
   font-weight: 600;
+  font-size: 1rem;
   letter-spacing: 0.02em;
 }
 .ticket-num {
