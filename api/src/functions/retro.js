@@ -3,25 +3,7 @@
 const { app } = require('@azure/functions');
 const store = require('../retroStore');
 const pokerStore = require('../store'); // to unlink the retro from its poker room on end
-
-// no-store so polling reads are never cached by the browser/CDN — otherwise
-// other devices render stale state until a manual refresh.
-const noCache = { 'Cache-Control': 'no-store' };
-
-function ok(body) {
-  return { status: 200, jsonBody: body, headers: noCache };
-}
-function bad(message, status = 400) {
-  return { status, jsonBody: { error: message }, headers: noCache };
-}
-
-async function readBody(req) {
-  try {
-    return (await req.json()) || {};
-  } catch {
-    return {};
-  }
-}
+const { ok, bad, readBody } = require('../http');
 
 // Load a board and verify the caller is its facilitator. Returns the board or a
 // ready-to-return error response.

@@ -143,7 +143,10 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   async function copyInvite() {
-    const url = `${location.origin}/retro/${code}`;
+    // Invite into the room session (the hub) — members reach the retro from there.
+    const url = board?.roomCode
+      ? `${location.origin}/?room=${board.roomCode}`
+      : `${location.origin}/retro/${code}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

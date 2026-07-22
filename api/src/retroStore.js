@@ -360,6 +360,7 @@ function publicView(board) {
     code: board.code,
     name: board.name,
     facilitatorId: board.facilitatorId,
+    roomCode: board.roomCode ?? null,
     phase: board.phase || 'active',
     carryOverItems: board.carryOverItems || [],
     columns: board.columns,

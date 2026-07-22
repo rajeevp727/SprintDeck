@@ -57,26 +57,31 @@ export default function Home({ initialCode = '', onEnter, onPrivacy }: Props) {
       <p className="tagline">Estimate together, across every time zone.</p>
 
       <div className="card home-card">
-        <div className="tabs">
-          <button
-            className={mode === 'create' ? 'tab active' : 'tab'}
-            onClick={() => {
-              setMode('create');
-              setError('');
-            }}
-          >
-            New session
-          </button>
-          <button
-            className={mode === 'join' ? 'tab active' : 'tab'}
-            onClick={() => {
-              setMode('join');
-              setError('');
-            }}
-          >
-            Join session
-          </button>
-        </div>
+        {/* Opened via an invite link → join only; no "New session" option. */}
+        {initialCode ? (
+          <h2 className="join-only-title">Join session</h2>
+        ) : (
+          <div className="tabs">
+            <button
+              className={mode === 'create' ? 'tab active' : 'tab'}
+              onClick={() => {
+                setMode('create');
+                setError('');
+              }}
+            >
+              New session
+            </button>
+            <button
+              className={mode === 'join' ? 'tab active' : 'tab'}
+              onClick={() => {
+                setMode('join');
+                setError('');
+              }}
+            >
+              Join session
+            </button>
+          </div>
+        )}
 
         {mode === 'create' ? (
           <form onSubmit={handleCreate} className="form">

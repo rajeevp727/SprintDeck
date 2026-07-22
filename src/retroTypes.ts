@@ -31,6 +31,7 @@ export interface RetroBoard {
   code: string;
   name: string;
   facilitatorId: string;
+  roomCode: string | null;
   phase: 'review' | 'active';
   carryOverItems: RetroCarryItem[];
   columns: RetroColumn[];
