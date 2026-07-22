@@ -204,7 +204,6 @@ async function createSession(name, moderatorName, desiredCode) {
     participants: {
       [pid]: { id: pid, name: (moderatorName || '').trim() || 'Moderator', vote: null },
     },
-    queue: [], // [{ id, title }]
     history: [], // [{ id, title, average, median, min, max, consensus, votes, at }]
     createdAt: now,
     lastActivity: now,
@@ -241,40 +240,11 @@ function kickParticipant(session, targetId) {
 // Domain mutators — operate on a loaded session object (sync); the caller
 // persists with saveSession afterwards.
 // ───────────────────────────────────────────────────────────────────────────
-function addToQueue(session, titles) {
-  for (const t of titles) {
-    const title = String(t || '').trim();
-    if (title) session.queue.push({ id: genId(), title });
-  }
-}
 
-function removeFromQueue(session, id) {
-  session.queue = session.queue.filter((s) => s.id !== id);
-}
-
-// Reorder the queue to match the given list of story ids (any not listed are
-// appended in their existing order, so a stale client can't drop stories).
-function reorderQueue(session, orderedIds) {
-  const ids = Array.isArray(orderedIds) ? orderedIds : [];
-  const byId = new Map(session.queue.map((s) => [s.id, s]));
-  const reordered = [];
-  for (const id of ids) {
-    const item = byId.get(id);
-    if (item) {
-      reordered.push(item);
-      byId.delete(id);
-    }
-  }
-  for (const item of session.queue) if (byId.has(item.id)) reordered.push(item);
-  session.queue = reordered;
-}
-
-// Open a voting round. Uses an explicit title if given, else the next queued
-// story. A story is OPTIONAL — with no title and an empty queue this starts a
-// plain "just vote" round (story = '').
+// Open a voting round for the given ticket. The title is OPTIONAL — with none it
+// starts a plain auto-numbered "just vote" round (story = 'Iteration N').
 function startStory(session, explicitTitle) {
   let title = String(explicitTitle || '').trim();
-  if (!title && session.queue.length > 0) title = session.queue.shift().title;
   // Starting fresh after a finished session (results were viewed) wipes the old
   // history so the new round starts clean. A mid-session next story keeps it.
   if (session.finished) session.history = [];
@@ -285,6 +255,15 @@ function startStory(session, explicitTitle) {
   session.status = 'voting';
   session.finished = false; // starting a round un-finishes the session
   session.currentEntryId = null; // next reveal creates a fresh history entry
+}
+
+// Moderator closes the current voting round → back to 'waiting' (no ticket).
+// In-progress votes are discarded; history (saved on reveal) is untouched.
+function closeVoting(session) {
+  for (const p of Object.values(session.participants)) p.vote = null;
+  session.story = '';
+  session.status = 'waiting';
+  session.currentEntryId = null;
 }
 
 // Reveal the current story and auto-save its result to history. Re-revealing
@@ -358,7 +337,6 @@ function publicView(session, requesterId) {
     deck: session.deck,
     moderatorId: session.moderatorId,
     participants,
-    queue: session.queue,
     history: session.history,
     average: stats.average,
     consensus: stats.consensus,
@@ -375,9 +353,7 @@ module.exports = {
   isModerator,
   kickParticipant,
   publicView,
-  addToQueue,
-  removeFromQueue,
-  reorderQueue,
   startStory,
+  closeVoting,
   revealAndSave,
 };

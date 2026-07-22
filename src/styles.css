@@ -617,8 +617,34 @@ input:focus {
   margin: 1.5rem 0;
 }
 .ticket-input {
+  display: flex;
+  align-items: center;
   width: 100%;
   max-width: 420px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 0.85rem;
+}
+.ticket-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+.ticket-prefix {
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ticket-num {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.72rem 0.4rem;
+  color: var(--text);
+  font-size: 1rem;
+}
+.ticket-num:focus {
+  box-shadow: none;
 }
 .story-banner {
   text-align: center;
@@ -632,6 +658,23 @@ input:focus {
 }
 .story-banner strong {
   color: var(--text);
+}
+.story-close {
+  margin-left: 0.6rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  vertical-align: middle;
+}
+.story-close:hover {
+  background: var(--danger);
+  color: #fff;
 }
 
 /* The deck */

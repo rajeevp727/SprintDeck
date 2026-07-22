@@ -28,7 +28,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
-  const [ticket, setTicket] = useState('');
+  const [ticketNum, setTicketNum] = useState('0000'); // only the number is editable; ticket = ENG-<num>
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -117,15 +117,16 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     }
   }
 
-  // Moderator names the ticket, then opens the round so the team knows what
-  // they're voting on; the ticket is saved into the results on reveal.
+  // Tickets are ENG-<number>; the moderator edits only the number (default 0000).
+  const ticketLabel = () => `ENG-${ticketNum.trim() || '0000'}`;
+
   async function startVoting() {
-    await moderatorAction(() => api.start(code, participantId, ticket.trim()));
-    setTicket('');
+    await moderatorAction(() => api.start(code, participantId, ticketLabel()));
+    setTicketNum('0000');
   }
   async function nextTicket() {
-    await moderatorAction(() => api.next(code, participantId, ticket.trim()));
-    setTicket('');
+    await moderatorAction(() => api.next(code, participantId, ticketLabel()));
+    setTicketNum('0000');
   }
 
   function kickMember(targetId: string, targetName: string) {
@@ -300,6 +301,15 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       {session.status !== 'waiting' && session.story && (
         <div className="story-banner">
           Voting on <strong>{session.story}</strong>
+          {isModerator && (
+            <button
+              className="story-close"
+              title="Close voting"
+              onClick={() => moderatorAction(() => api.closeVoting(code, participantId))}
+            >
+              ×
+            </button>
+          )}
         </div>
       )}
 
@@ -361,13 +371,17 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         <>
           <div className="panel">
             {(session.status === 'waiting' || session.status === 'revealed') && (
-              <input
-                className="ticket-input"
-                value={ticket}
-                onChange={(e) => setTicket(e.target.value)}
-                placeholder="Ticket name / number (e.g. ENG-1234)"
-                maxLength={80}
-              />
+              <div className="ticket-input" title="ENG-____">
+                <span className="ticket-prefix">ENG-</span>
+                <input
+                  className="ticket-num"
+                  value={ticketNum}
+                  onChange={(e) => setTicketNum(e.target.value.replace(/\D/g, ''))}
+                  placeholder="0000"
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+              </div>
             )}
             <div className="panel-buttons">
               {session.status === 'waiting' && (

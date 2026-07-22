@@ -140,55 +140,6 @@ app.http('reset', {
   },
 });
 
-// POST /api/session/{code}/queue  { participantId, stories }   (moderator)
-app.http('addToQueue', {
-  methods: ['POST'],
-  authLevel: 'anonymous',
-  route: 'session/{code}/queue',
-  handler: async (req) => {
-    const { participantId, stories } = await readBody(req);
-    const { session, error } = await requireModerator(req.params.code, participantId);
-    if (error) return error;
-
-    const titles = Array.isArray(stories) ? stories : String(stories || '').split('\n');
-    store.addToQueue(session, titles);
-    await store.saveSession(session);
-    return ok({ session: store.publicView(session, participantId) });
-  },
-});
-
-// DELETE /api/session/{code}/queue/{storyId}?participantId=...   (moderator)
-app.http('removeFromQueue', {
-  methods: ['DELETE'],
-  authLevel: 'anonymous',
-  route: 'session/{code}/queue/{storyId}',
-  handler: async (req) => {
-    const participantId = req.query.get('participantId');
-    const { session, error } = await requireModerator(req.params.code, participantId);
-    if (error) return error;
-
-    store.removeFromQueue(session, req.params.storyId);
-    await store.saveSession(session);
-    return ok({ session: store.publicView(session, participantId) });
-  },
-});
-
-// POST /api/session/{code}/queue/reorder  { participantId, order: [storyId] }   (moderator)
-app.http('reorderQueue', {
-  methods: ['POST'],
-  authLevel: 'anonymous',
-  route: 'session/{code}/queue/reorder',
-  handler: async (req) => {
-    const { participantId, order } = await readBody(req);
-    const { session, error } = await requireModerator(req.params.code, participantId);
-    if (error) return error;
-
-    store.reorderQueue(session, order);
-    await store.saveSession(session);
-    return ok({ session: store.publicView(session, participantId) });
-  },
-});
-
 // POST /api/session/{code}/kick  { participantId, targetId }   (moderator)
 app.http('kickParticipant', {
   methods: ['POST'],
@@ -233,6 +184,23 @@ app.http('endSession', {
 
     await store.deleteSession(req.params.code);
     return ok({ ended: true });
+  },
+});
+
+// POST /api/session/{code}/close  { participantId }   (moderator) — close the
+// current voting round and return the room to waiting (no active ticket).
+app.http('closeVoting', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'session/{code}/close',
+  handler: async (req) => {
+    const { participantId } = await readBody(req);
+    const { session, error } = await requireModerator(req.params.code, participantId);
+    if (error) return error;
+
+    store.closeVoting(session);
+    await store.saveSession(session);
+    return ok({ session: store.publicView(session, participantId) });
   },
 });
 
