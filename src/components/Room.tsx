@@ -155,6 +155,16 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     resetTicket();
   }
 
+  // Finish planning, then pop the Sprint Results shortly after so the moderator
+  // can review and export the ticket-wise estimates.
+  async function finishPlanning() {
+    await moderatorAction(() => api.finish(code, participantId));
+    window.setTimeout(() => {
+      setSeenResults(session?.history.length ?? 0); // opening the view marks results as seen
+      setShowResults(true);
+    }, 1000);
+  }
+
   function kickMember(targetId: string, targetName: string) {
     if (!window.confirm(`Remove ${targetName} from the room?`)) return;
     moderatorAction(() => api.kick(code, participantId, targetId));
@@ -478,10 +488,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
                     >
                       Vote again
                     </button>
-                    <button
-                      className="ghost"
-                      onClick={() => moderatorAction(() => api.finish(code, participantId))}
-                    >
+                    <button className="ghost" onClick={finishPlanning}>
                       Finish
                     </button>
                   </>
