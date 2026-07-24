@@ -29,7 +29,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
   // Ticket key = ENG<part1>-<part2>; ENG and the dash are fixed, both parts editable.
-  const [ticketP1, setTicketP1] = useState('');
+  const [ticketP1, setTicketP1] = useState('1');
   const [ticketP2, setTicketP2] = useState('0000');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
@@ -122,7 +122,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   // Compose the ticket key from the two editable parts, defaulting part2 to 0000.
   const ticketLabel = () => `ENG${ticketP1.trim()}-${ticketP2.trim() || '0000'}`;
   function resetTicket() {
-    setTicketP1('');
+    setTicketP1('1');
     setTicketP2('0000');
   }
 
@@ -377,13 +377,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         <>
           <div className="panel">
             {(session.status === 'waiting' || session.status === 'revealed') && (
-              <div className="ticket-input" title="ENG_-____">
+              <div className="ticket-input">
                 <span className="ticket-prefix">ENG</span>
                 <input
                   className="ticket-seg ticket-seg-1"
                   value={ticketP1}
                   onChange={(e) => setTicketP1(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
-                  placeholder="x"
+                  placeholder="1"
                   maxLength={3}
                 />
                 <span className="ticket-dash">-</span>

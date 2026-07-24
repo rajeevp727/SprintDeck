@@ -647,8 +647,8 @@ input:focus {
   box-shadow: none;
 }
 .ticket-seg-1 {
-  width: 2.75rem;
-  text-align: center;
+  width: 1.6rem;
+  padding-left: 0.15rem;
 }
 .ticket-seg-2 {
   flex: 1;
