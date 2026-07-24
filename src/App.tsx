@@ -4,6 +4,7 @@ import Room from './components/Room';
 import RetroHome from './components/RetroHome';
 import RetroBoard from './components/RetroBoard';
 import Privacy from './components/Privacy';
+import Terms from './components/Terms';
 import StickyAd from './components/StickyAd';
 import { ToastHost } from './components/Toast';
 import { getIdentity, getCurrentRoom, setCurrentRoom, clearCurrentRoom } from './storage';
@@ -13,6 +14,7 @@ type Route =
   | { kind: 'retro'; code: string }
   | { kind: 'retroJoin'; code: string }
   | { kind: 'privacy' }
+  | { kind: 'terms' }
   | { kind: 'home'; joinCode?: string };
 
 // The retrospective board has its own real URL path: /retro/CODE (unlike poker
@@ -33,6 +35,7 @@ function pokerCodeFromUrl(): string {
 function computeRoute(): Route {
   const path = window.location.pathname;
   if (path === '/privacy' || path === '/privacy/') return { kind: 'privacy' };
+  if (path === '/terms' || path === '/terms/') return { kind: 'terms' };
 
   const retroMatch = path.match(RETRO_PATH_RE);
   if (retroMatch) {
@@ -99,10 +102,15 @@ export default function App() {
   function goPrivacy() {
     go('/privacy', { kind: 'privacy' });
   }
+  function goTerms() {
+    go('/terms', { kind: 'terms' });
+  }
 
   let page;
   if (route.kind === 'privacy') {
-    page = <Privacy onBack={goHome} />;
+    page = <Privacy onBack={goHome} onTerms={goTerms} />;
+  } else if (route.kind === 'terms') {
+    page = <Terms onBack={goHome} onPrivacy={goPrivacy} />;
   } else if (route.kind === 'room') {
     page = (
       <Room code={route.code} onLeave={goHome} onMissingIdentity={goHome} onEnterRetro={goRetro} />
@@ -114,7 +122,9 @@ export default function App() {
       <RetroHome joinCode={route.code} onEnter={goRetro} onExit={exitRetro} onPrivacy={goPrivacy} />
     );
   } else {
-    page = <Home initialCode={route.joinCode} onEnter={goRoom} onPrivacy={goPrivacy} />;
+    page = (
+      <Home initialCode={route.joinCode} onEnter={goRoom} onPrivacy={goPrivacy} onTerms={goTerms} />
+    );
   }
 
   return (

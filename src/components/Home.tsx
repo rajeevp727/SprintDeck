@@ -7,9 +7,10 @@ interface Props {
   initialCode?: string;
   onEnter: (code: string) => void;
   onPrivacy: () => void;
+  onTerms: () => void;
 }
 
-export default function Home({ initialCode = '', onEnter, onPrivacy }: Props) {
+export default function Home({ initialCode = '', onEnter, onPrivacy, onTerms }: Props) {
   const [mode, setMode] = useState<'create' | 'join'>(initialCode ? 'join' : 'create');
   const [name, setName] = useState('');
   const [sessionName, setSessionName] = useState('');
@@ -135,6 +136,16 @@ export default function Home({ initialCode = '', onEnter, onPrivacy }: Props) {
           }}
         >
           Privacy &amp; About
+        </a>
+        <span className="footer-sep">·</span>
+        <a
+          href="/terms"
+          onClick={(e) => {
+            e.preventDefault();
+            onTerms();
+          }}
+        >
+          Terms
         </a>
       </footer>
     </div>
