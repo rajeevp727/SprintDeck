@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/adsconfig.ts","./src/api.ts","./src/export.ts","./src/main.tsx","./src/storage.ts","./src/types.ts","./src/components/adbanner.tsx","./src/components/errorboundary.tsx","./src/components/home.tsx","./src/components/privacy.tsx","./src/components/resultsmodal.tsx","./src/components/room.tsx","./src/components/stickyad.tsx"],"version":"5.9.3"}
