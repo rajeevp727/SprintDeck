@@ -14,6 +14,7 @@ interface Props {
 // hidden and we just say thanks.
 export default function ThanksPage({ code, name, onEnter }: Props) {
   const [roomName, setRoomName] = useState<string | null>(null); // null → room closed / unknown
+  const [checked, setChecked] = useState(false); // false until the room-status check resolves
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,6 +27,9 @@ export default function ThanksPage({ code, name, onEnter }: Props) {
       })
       .catch(() => {
         if (alive) setRoomName(null); // 404 → room ended, no rejoin
+      })
+      .finally(() => {
+        if (alive) setChecked(true);
       });
     return () => {
       alive = false;
@@ -47,7 +51,7 @@ export default function ThanksPage({ code, name, onEnter }: Props) {
 
   return (
     <div className="home">
-      {roomName && (
+      {checked && roomName && (
         <div className="thanks-topbar">
           <button className="primary" disabled={busy} onClick={rejoin}>
             {busy ? 'Rejoining…' : 'Rejoin the room'}
@@ -63,9 +67,9 @@ export default function ThanksPage({ code, name, onEnter }: Props) {
       <div className="card home-card thanks-card">
         <h2>Thanks for Participating!</h2>
         <p className="muted">
-          {roomName
-            ? 'Hope you liked the application!'
-            : 'The room has ended. Hope you liked the application!'}
+          {/* Only claim the room "has ended" once the check confirms it — otherwise
+              the message flashes during the brief status lookup. */}
+          {checked && !roomName ? 'The room has ended. ' : ''}Hope you liked the application!
         </p>
         {error && <p className="error">{error}</p>}
       </div>
