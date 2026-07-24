@@ -647,7 +647,7 @@ input:focus {
   box-shadow: none;
 }
 .ticket-seg-1 {
-  width: 1.6rem;
+  box-sizing: content-box; /* inline width is exactly the content (N ch) */
   padding-left: 0.15rem;
 }
 .ticket-seg-2 {

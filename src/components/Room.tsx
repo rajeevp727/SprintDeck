@@ -34,6 +34,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [seenResults, setSeenResults] = useState(0); // results count already viewed → badge shows only new ones
   const missCount = useRef(0);
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
@@ -252,10 +253,15 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
             <button
               className="ghost"
               title="View results"
-              onClick={() => setShowResults(true)}
+              onClick={() => {
+                setSeenResults(session.history.length); // mark all current results as viewed
+                setShowResults(true);
+              }}
             >
               Results
-              {session.history.length > 0 && <span className="badge">{session.history.length}</span>}
+              {session.history.length > seenResults && (
+                <span className="badge">{session.history.length - seenResults}</span>
+              )}
             </button>
           )}
           {isModerator && (
@@ -381,6 +387,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
                 <span className="ticket-prefix">ENG</span>
                 <input
                   className="ticket-seg ticket-seg-1"
+                  style={{ width: `${Math.max(ticketP1.length, 1)}ch` }}
                   value={ticketP1}
                   onChange={(e) => setTicketP1(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
                   placeholder="1"
