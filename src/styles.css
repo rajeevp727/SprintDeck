@@ -636,16 +636,27 @@ input:focus {
   font-size: 1rem;
   letter-spacing: 0.02em;
 }
-.ticket-num {
-  flex: 1;
+.ticket-seg {
   background: transparent;
   border: none;
-  padding: 0.72rem 0.4rem 0.72rem 0.15rem;
+  padding: 0.72rem 0;
   color: var(--text);
   font-size: 1rem;
 }
-.ticket-num:focus {
+.ticket-seg:focus {
   box-shadow: none;
+}
+.ticket-seg-1 {
+  width: 2.75rem;
+  text-align: center;
+}
+.ticket-seg-2 {
+  flex: 1;
+  padding-left: 0.15rem;
+}
+.ticket-dash {
+  color: var(--muted);
+  padding: 0 0.1rem;
 }
 .story-banner {
   position: relative;

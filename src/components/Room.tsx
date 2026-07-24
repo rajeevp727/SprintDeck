@@ -28,7 +28,9 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
-  const [ticketNum, setTicketNum] = useState('0000'); // only the number is editable; ticket = ENG-<num>
+  // Ticket key = ENG<part1>-<part2>; ENG and the dash are fixed, both parts editable.
+  const [ticketP1, setTicketP1] = useState('');
+  const [ticketP2, setTicketP2] = useState('0000');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -117,16 +119,20 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
     }
   }
 
-  // Tickets are ENG-<number>; the moderator edits only the number (default 0000).
-  const ticketLabel = () => `ENG-${ticketNum.trim() || '0000'}`;
+  // Compose the ticket key from the two editable parts, defaulting part2 to 0000.
+  const ticketLabel = () => `ENG${ticketP1.trim()}-${ticketP2.trim() || '0000'}`;
+  function resetTicket() {
+    setTicketP1('');
+    setTicketP2('0000');
+  }
 
   async function startVoting() {
     await moderatorAction(() => api.start(code, participantId, ticketLabel()));
-    setTicketNum('0000');
+    resetTicket();
   }
   async function nextTicket() {
     await moderatorAction(() => api.next(code, participantId, ticketLabel()));
-    setTicketNum('0000');
+    resetTicket();
   }
 
   function kickMember(targetId: string, targetName: string) {
@@ -371,15 +377,22 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         <>
           <div className="panel">
             {(session.status === 'waiting' || session.status === 'revealed') && (
-              <div className="ticket-input" title="ENG-____">
-                <span className="ticket-prefix">ENG-</span>
+              <div className="ticket-input" title="ENG_-____">
+                <span className="ticket-prefix">ENG</span>
                 <input
-                  className="ticket-num"
-                  value={ticketNum}
-                  onChange={(e) => setTicketNum(e.target.value.replace(/\D/g, ''))}
+                  className="ticket-seg ticket-seg-1"
+                  value={ticketP1}
+                  onChange={(e) => setTicketP1(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
+                  placeholder="x"
+                  maxLength={3}
+                />
+                <span className="ticket-dash">-</span>
+                <input
+                  className="ticket-seg ticket-seg-2"
+                  value={ticketP2}
+                  onChange={(e) => setTicketP2(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
                   placeholder="0000"
-                  inputMode="numeric"
-                  maxLength={6}
+                  maxLength={10}
                 />
               </div>
             )}
@@ -416,12 +429,14 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
                   >
                     Vote again
                   </button>
-                  <button
-                    className="ghost"
-                    onClick={() => moderatorAction(() => api.finish(code, participantId))}
-                  >
-                    Finish
-                  </button>
+                  {!session.finished && (
+                    <button
+                      className="ghost"
+                      onClick={() => moderatorAction(() => api.finish(code, participantId))}
+                    >
+                      Finish
+                    </button>
+                  )}
                 </>
               )}
             </div>
