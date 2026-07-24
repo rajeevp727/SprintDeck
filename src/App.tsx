@@ -120,7 +120,7 @@ export default function App() {
   } else if (route.kind === 'terms') {
     page = <Terms onBack={goHome} onPrivacy={goPrivacy} />;
   } else if (route.kind === 'thanks') {
-    page = <ThanksPage code={route.code} name={route.name} onEnter={goRoom} onHome={goHome} />;
+    page = <ThanksPage code={route.code} name={route.name} onEnter={goRoom} />;
   } else if (route.kind === 'room') {
     page = (
       <Room

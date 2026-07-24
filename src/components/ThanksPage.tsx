@@ -6,14 +6,13 @@ interface Props {
   code: string;
   name: string;
   onEnter: (code: string) => void;
-  onHome: () => void;
 }
 
 // Shown to a member after they leave (or are removed from) a room, instead of
 // dumping them back on the landing screen. If the room is still open we offer a
 // one-click "Rejoin room {name}"; if the moderator has ended it, the button is
 // hidden and we just say thanks.
-export default function ThanksPage({ code, name, onEnter, onHome }: Props) {
+export default function ThanksPage({ code, name, onEnter }: Props) {
   const [roomName, setRoomName] = useState<string | null>(null); // null → room closed / unknown
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -69,9 +68,6 @@ export default function ThanksPage({ code, name, onEnter, onHome }: Props) {
             : 'The room has ended. Hope you liked the application!'}
         </p>
         {error && <p className="error">{error}</p>}
-        <button className="ghost" onClick={onHome}>
-          Back to home
-        </button>
       </div>
     </div>
   );
