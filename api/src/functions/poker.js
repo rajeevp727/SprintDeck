@@ -223,8 +223,8 @@ app.http('nextStory', {
 });
 
 // POST /api/session/{code}/finish  { participantId }   (moderator) — mark the
-// session finished (estimation done; unlocks Results). Was missing, so the
-// frontend's Finish button used to 404.
+// planning finished, which enables the Sprint Results (full ticket-wise data)
+// and the retrospective. Results are kept until the room is ended.
 app.http('finishSession', {
   methods: ['POST'],
   authLevel: 'anonymous',

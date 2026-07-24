@@ -148,7 +148,9 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   }
 
   async function endRoom() {
-    window.alert('Please check the sprint planning results');
+    window.alert(
+      'Before you end the room: click Finish, then open "Sprint Results" to review and export the ticket-wise estimates. All results are permanently deleted when the room ends.',
+    );
     if (!window.confirm('End this room for everyone? This cannot be undone.')) return;
     try {
       await api.end(code, participantId);
@@ -252,7 +254,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
           {isModerator && (
             <button
               className="ghost"
-              title="View results"
+              disabled={!session.finished}
+              title={session.finished ? 'View Sprint Results' : 'Finish planning to view Sprint Results'}
               onClick={() => {
                 setSeenResults(session.history.length); // mark all current results as viewed
                 setShowResults(true);

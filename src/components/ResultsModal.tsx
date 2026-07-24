@@ -16,7 +16,7 @@ export default function ResultsModal({ sessionName, history, onClose }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
-          <h3>Results history</h3>
+          <h3>Sprint Results</h3>
           <button className="modal-close" onClick={onClose} aria-label="Close">
             ×
           </button>
