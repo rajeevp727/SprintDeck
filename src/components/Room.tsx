@@ -490,15 +490,16 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
         <p className="wait-msg">Waiting for the moderator to start voting…</p>
       )}
 
-      {/* The deck — members vote; only shown while a round is open. Outside voting
-          (waiting / revealed, e.g. a member who just rejoined) it's hidden so the
-          rejoined member sees a clean board instead of a dead, greyed-out deck. */}
-      {!isModerator && session.status === 'voting' && (
-        <section className="deck">
+      {/* The deck — members vote; the moderator only facilitates. Always shown to
+          members (including one who just rejoined) so the cards stay visible; it's
+          disabled outside an open round. */}
+      {!isModerator && (
+        <section className={`deck ${session.status === 'voting' ? '' : 'disabled'}`}>
           {session.deck.map((card) => (
             <button
               key={card}
               className={`poker-card ${myVote === card ? 'selected' : ''}`}
+              disabled={session.status !== 'voting'}
               onClick={() => castVote(card)}
             >
               <span className="corner tl">{card}</span>

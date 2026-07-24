@@ -702,6 +702,9 @@ input:focus {
   justify-content: center;
   margin-top: 1rem;
 }
+.deck.disabled {
+  opacity: 0.45;
+}
 .poker-card {
   position: relative;
   width: 70px;
@@ -714,7 +717,7 @@ input:focus {
   font-weight: 700;
   transition: transform 0.12s, border-color 0.12s, background 0.12s;
 }
-.poker-card:hover {
+.poker-card:not(:disabled):hover {
   transform: translateY(-8px);
   border-color: var(--accent);
 }
@@ -723,6 +726,9 @@ input:focus {
   border-color: #fff;
   transform: translateY(-12px);
   box-shadow: var(--shadow);
+}
+.poker-card:disabled {
+  cursor: default;
 }
 .poker-card .face {
   display: block;
