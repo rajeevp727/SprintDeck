@@ -95,35 +95,24 @@ button:focus-visible {
   padding: 1.5rem;
   text-align: left;
 }
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
 .join-only-title {
   margin: 0 0 1.25rem;
   font-size: 1.1rem;
 }
-.tab {
-  flex: 1;
-  padding: 0.65rem;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  border-radius: var(--radius-sm);
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: background var(--transition), border-color var(--transition), color var(--transition);
+.thanks-topbar {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
 }
-.tab:hover:not(.active) {
-  border-color: var(--accent);
-  color: var(--text);
+.thanks-card {
+  text-align: center;
 }
-.tab.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(79, 124, 255, 0.3);
+.thanks-card h2 {
+  margin: 0 0 0.5rem;
+}
+.thanks-card .muted {
+  margin: 0 0 1.25rem;
 }
 .form {
   display: flex;

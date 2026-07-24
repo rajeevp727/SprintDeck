@@ -11,7 +11,9 @@ interface Props {
 }
 
 export default function Home({ initialCode = '', onEnter, onPrivacy, onTerms }: Props) {
-  const [mode, setMode] = useState<'create' | 'join'>(initialCode ? 'join' : 'create');
+  // A room is always created from the landing screen; joining only happens via an
+  // invite link (which supplies initialCode). So there is no "Join session" tab.
+  const joining = !!initialCode;
   const [name, setName] = useState('');
   const [sessionName, setSessionName] = useState('');
   const [code, setCode] = useState(initialCode.toUpperCase());
@@ -58,33 +60,10 @@ export default function Home({ initialCode = '', onEnter, onPrivacy, onTerms }: 
       <p className="tagline">Estimate together, across every time zone.</p>
 
       <div className="card home-card">
-        {/* Opened via an invite link → join only; no "New session" option. */}
-        {initialCode ? (
-          <h2 className="join-only-title">Join session</h2>
-        ) : (
-          <div className="tabs">
-            <button
-              className={mode === 'create' ? 'tab active' : 'tab'}
-              onClick={() => {
-                setMode('create');
-                setError('');
-              }}
-            >
-              New session
-            </button>
-            <button
-              className={mode === 'join' ? 'tab active' : 'tab'}
-              onClick={() => {
-                setMode('join');
-                setError('');
-              }}
-            >
-              Join session
-            </button>
-          </div>
-        )}
+        {/* Landing → always create a room. Invite links (initialCode) → join only. */}
+        <h2 className="join-only-title">{joining ? 'Join session' : 'New session'}</h2>
 
-        {mode === 'create' ? (
+        {!joining ? (
           <form onSubmit={handleCreate} className="form">
             <label>
               Your name

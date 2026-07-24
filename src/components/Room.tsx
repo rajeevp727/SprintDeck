@@ -18,12 +18,14 @@ interface Props {
   code: string;
   onLeave: () => void;
   onMissingIdentity: () => void;
+  onThanks: (code: string, name: string) => void;
   onEnterRetro: (code: string) => void;
 }
 
-export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }: Props) {
+export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnterRetro }: Props) {
   const identity = getIdentity(code);
   const participantId = identity?.participantId ?? '';
+  const myName = identity?.name ?? '';
 
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
@@ -55,7 +57,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
       const me = s.participants.find((p) => p.id === participantId);
       if (!me) {
         clearIdentity(code);
-        onMissingIdentity();
+        onThanks(code, myName); // removed by the moderator → thank them (room still open)
         return;
       }
       notifyPresence(s.participants, s.moderatorId === participantId, participantId, prevParticipants, 'room');
@@ -70,13 +72,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
         missCount.current += 1;
         if (missCount.current >= MAX_MISSES) {
           clearIdentity(code);
-          onMissingIdentity();
+          onThanks(code, myName); // room gone / moderator ended it → thank the member
         }
         return;
       }
       setError(msg);
     }
-  }, [code, participantId, onMissingIdentity]);
+  }, [code, participantId, myName, onThanks]);
 
   const { connected: rtConnected } = useRealtime(`room:${code}`, refresh);
 
@@ -144,7 +146,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
   function leave() {
     api.leaveRoom(code, participantId).catch(() => {}); // best-effort; leave locally regardless
     clearIdentity(code);
-    onLeave();
+    onThanks(code, myName); // members get a thank-you page (with a Rejoin option), not home
   }
 
   async function endRoom() {

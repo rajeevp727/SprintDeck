@@ -5,6 +5,7 @@ import RetroHome from './components/RetroHome';
 import RetroBoard from './components/RetroBoard';
 import Privacy from './components/Privacy';
 import Terms from './components/Terms';
+import ThanksPage from './components/ThanksPage';
 import StickyAd from './components/StickyAd';
 import { ToastHost } from './components/Toast';
 import { getIdentity, getCurrentRoom, setCurrentRoom, clearCurrentRoom } from './storage';
@@ -15,6 +16,7 @@ type Route =
   | { kind: 'retroJoin'; code: string }
   | { kind: 'privacy' }
   | { kind: 'terms' }
+  | { kind: 'thanks'; code: string; name: string }
   | { kind: 'home'; joinCode?: string };
 
 // The retrospective board has its own real URL path: /retro/CODE (unlike poker
@@ -93,6 +95,12 @@ export default function App() {
     clearCurrentRoom();
     go('/', { kind: 'home' }, true);
   }
+  // A member left (or was removed from) a room → thank them instead of dropping
+  // them on the landing screen. The code is kept out of the URL (like the room).
+  function goThanks(code: string, name: string) {
+    clearCurrentRoom();
+    go('/', { kind: 'thanks', code: code.toUpperCase(), name }, true);
+  }
   // Leave a retro without disturbing an active poker room — recompute from
   // storage so an in-progress room resumes, otherwise land on home.
   function exitRetro() {
@@ -111,9 +119,17 @@ export default function App() {
     page = <Privacy onBack={goHome} onTerms={goTerms} />;
   } else if (route.kind === 'terms') {
     page = <Terms onBack={goHome} onPrivacy={goPrivacy} />;
+  } else if (route.kind === 'thanks') {
+    page = <ThanksPage code={route.code} name={route.name} onEnter={goRoom} onHome={goHome} />;
   } else if (route.kind === 'room') {
     page = (
-      <Room code={route.code} onLeave={goHome} onMissingIdentity={goHome} onEnterRetro={goRetro} />
+      <Room
+        code={route.code}
+        onLeave={goHome}
+        onMissingIdentity={goHome}
+        onThanks={goThanks}
+        onEnterRetro={goRetro}
+      />
     );
   } else if (route.kind === 'retro') {
     page = <RetroBoard code={route.code} onLeave={exitRetro} onMissingIdentity={exitRetro} />;
