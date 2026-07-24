@@ -44,7 +44,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     if (!participantId) onMissingIdentity();
   }, [participantId, onMissingIdentity]);
 
-  // A member pushed out of the board (retro ended) — show a 3s thank-you popup,
+  // A member pushed out of the board (retro ended) — show a 2s thank-you popup,
   // then leave.
   const farewellAndLeave = useCallback(() => {
     if (leavingRef.current) return;
@@ -53,7 +53,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     window.setTimeout(() => {
       clearIdentity(code);
       onMissingIdentity();
-    }, 3000);
+    }, 2000);
   }, [code, onMissingIdentity]);
 
   const refresh = useCallback(async () => {
@@ -130,13 +130,13 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
 
-  // Greet each member with a 3s welcome popup once they land on the board (the
+  // Greet each member with a 2s welcome popup once they land on the board (the
   // facilitator opened it, so they don't need greeting).
   useEffect(() => {
     if (!board || welcomedRef.current || board.facilitatorId === participantId) return;
     welcomedRef.current = true;
     setNotice('welcome');
-    const t = window.setTimeout(() => setNotice((n) => (n === 'welcome' ? null : n)), 3000);
+    const t = window.setTimeout(() => setNotice((n) => (n === 'welcome' ? null : n)), 2000);
     return () => window.clearTimeout(t);
   }, [board, participantId]);
 
