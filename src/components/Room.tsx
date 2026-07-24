@@ -30,9 +30,10 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState('');
   const [myVote, setMyVote] = useState<string | null>(null);
-  // Ticket key = ENG<part1>-<part2>; ENG and the dash are fixed, both parts editable.
-  const [ticketP1, setTicketP1] = useState('1');
-  const [ticketP2, setTicketP2] = useState('0000');
+  // Ticket key = ENG<part1>-<part2>; ENG and the dash are fixed text, both parts are
+  // editable and start empty (the numbers show only as placeholders).
+  const [ticketP1, setTicketP1] = useState('');
+  const [ticketP2, setTicketP2] = useState('');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -154,11 +155,12 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     }
   }
 
-  // Compose the ticket key from the two editable parts, defaulting part2 to 0000.
-  const ticketLabel = () => `ENG${ticketP1.trim()}-${ticketP2.trim() || '0000'}`;
+  // Compose the ticket key from the two editable parts, falling back to the
+  // placeholder numbers when a part is left blank.
+  const ticketLabel = () => `ENG${ticketP1.trim() || '1'}-${ticketP2.trim() || '1234'}`;
   function resetTicket() {
-    setTicketP1('1');
-    setTicketP2('0000');
+    setTicketP1('');
+    setTicketP2('');
   }
 
   async function startVoting() {
@@ -278,6 +280,11 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const total = voters.length;
   const moderator = session.participants.find((p) => p.isModerator);
 
+  // Retro shows before the first round starts and again after Finish — hidden
+  // while planning is in progress. (If a board already exists, keep it reachable.)
+  const beforeFirstPlan = session.status === 'waiting' && session.history.length === 0;
+  const showRetro = !!session.retroCode || session.finished || beforeFirstPlan;
+
   // Enter in the ticket input opens the round: Start voting from waiting (needs a
   // member) or once finished; Next ticket from a revealed round mid-planning.
   const submitTicket = () => {
@@ -315,8 +322,9 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
               {copied ? 'Copied!' : 'Invite'}
             </button>
           )}
-          {/* Retro is always available — it can be run without any planning estimates. */}
+          {/* Retro shows before the first round and after Finish; hidden mid-planning. */}
           {isModerator &&
+            showRetro &&
             (session.retroCode ? (
               <button className="ghost" title="Open the retrospective board" onClick={startRetro}>
                 Open Retrospective
@@ -443,7 +451,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
                   value={ticketP2}
                   onChange={(e) => setTicketP2(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
                   onKeyDown={ticketKeyDown}
-                  placeholder="0000"
+                  placeholder="1234"
                   maxLength={10}
                 />
               </div>
