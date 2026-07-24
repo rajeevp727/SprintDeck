@@ -245,9 +245,8 @@ function kickParticipant(session, targetId) {
 // starts a plain auto-numbered "just vote" round (story = 'Iteration N').
 function startStory(session, explicitTitle) {
   let title = String(explicitTitle || '').trim();
-  // Starting fresh after a finished session (results were viewed) wipes the old
-  // history so the new round starts clean. A mid-session next story keeps it.
-  if (session.finished) session.history = [];
+  // History accumulates for the whole life of the room — every ticket from the
+  // first is kept in the results until the room is ended (which deletes it).
   // No story name (just-vote mode) → auto-number the iteration so results read well.
   if (!title) title = `Iteration ${session.history.length + 1}`;
   session.story = title;
