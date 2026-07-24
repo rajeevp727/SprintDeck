@@ -8,6 +8,7 @@ import { toast } from './Toast';
 import { notifyPresence } from '../presence';
 import { useRealtime } from '../realtime';
 import { exportDoc, retroExportDoc, exportFormats } from '../export';
+import RetroResultsModal from './RetroResultsModal';
 
 const pollMs = 200; // polling fallback, used only while real-time isn't connected (e.g. free-tier connection cap / outage)
 // Only leave after this many CONSECUTIVE "not found" polls — tolerates transient
@@ -30,8 +31,10 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [copied, setCopied] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [endedBoard, setEndedBoard] = useState<RetroBoardType | null>(null); // snapshot shown to the facilitator after ending
   const [typingNames, setTypingNames] = useState<Record<string, string>>({});
   const missCount = useRef(0);
+  const endedRef = useRef(false); // true once we've ended → stop polling from bouncing off the results view
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -41,7 +44,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }, [participantId, onMissingIdentity]);
 
   const refresh = useCallback(async () => {
-    if (!participantId) return;
+    if (!participantId || endedRef.current) return;
     try {
       const { board: b } = await retroApi.getBoard(code, participantId);
       missCount.current = 0;
@@ -131,15 +134,16 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   }
 
   async function endBoard() {
+    if (!board) return;
     if (!window.confirm('End this retrospective for everyone? This cannot be undone.')) return;
+    endedRef.current = true; // stop polling so the results view isn't bounced away
     try {
       await retroApi.end(code, participantId);
       toast('Retrospective ended', 'success');
     } catch {
-      /* even if it fails, leave locally */
+      /* even if the call fails, still show the local snapshot */
     }
-    clearIdentity(code);
-    onLeave();
+    setEndedBoard(board); // show the results modal; leave only when it's closed
   }
 
   async function copyInvite() {
@@ -292,6 +296,16 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
       {error && <p className="error room-error">{error}</p>}
 
       <AdBanner className="ad-page" />
+
+      {endedBoard && (
+        <RetroResultsModal
+          board={endedBoard}
+          onClose={() => {
+            clearIdentity(code);
+            onLeave();
+          }}
+        />
+      )}
     </div>
   );
 }

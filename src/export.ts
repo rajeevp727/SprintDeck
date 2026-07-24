@@ -4,16 +4,14 @@ import { buildXlsx } from './xlsx';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Generic export: a document is a title + one or more tables. Each format
-// (txt / csv / Excel / PDF) renders the same document. No external libraries —
-// Excel is an HTML table saved as .xls (Excel opens it), PDF is the browser's
-// print dialog ("Save as PDF").
+// (txt / Excel / PDF) renders the same document. No external libraries —
+// Excel is a real .xlsx, PDF is the browser's print dialog ("Save as PDF").
 // ───────────────────────────────────────────────────────────────────────────
-export type ExportFormat = 'txt' | 'csv' | 'excel' | 'pdf';
+export type ExportFormat = 'txt' | 'excel' | 'pdf';
 
 // The formats offered in the export menus, in display order.
 export const exportFormats: { format: ExportFormat; label: string }[] = [
   { format: 'txt', label: 'Text (.txt)' },
-  { format: 'csv', label: 'CSV (.csv)' },
   { format: 'excel', label: 'Excel (.xlsx)' },
   { format: 'pdf', label: 'PDF' },
 ];
@@ -66,22 +64,6 @@ function toText(doc: ExportDoc): string {
   return out.join('\n');
 }
 
-// ── csv ──────────────────────────────────────────────────────────────────────
-function csvCell(c: Cell): string {
-  const s = str(c);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-function toCsv(doc: ExportDoc): string {
-  const lines: string[] = [];
-  doc.tables.forEach((t, i) => {
-    if (i > 0) lines.push('');
-    if (t.title) lines.push(csvCell(t.title));
-    lines.push(t.headers.map(csvCell).join(','));
-    for (const row of t.rows) lines.push(row.map(csvCell).join(','));
-  });
-  return '﻿' + lines.join('\r\n'); // BOM so Excel detects UTF-8
-}
-
 // ── html (shared by Excel + PDF) ──────────────────────────────────────────────
 function tablesHtml(doc: ExportDoc): string {
   return doc.tables
@@ -117,8 +99,6 @@ export function exportDoc(format: ExportFormat, doc: ExportDoc) {
   switch (format) {
     case 'txt':
       return downloadBlob(toText(doc), `${doc.filename}.txt`, 'text/plain;charset=utf-8');
-    case 'csv':
-      return downloadBlob(toCsv(doc), `${doc.filename}.csv`, 'text/csv;charset=utf-8');
     case 'excel':
       return saveBlob(buildXlsx(doc.tables, doc.title), `${doc.filename}.xlsx`);
     case 'pdf':

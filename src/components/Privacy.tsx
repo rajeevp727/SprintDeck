@@ -28,7 +28,7 @@ export default function Privacy({ onBack, onTerms }: Props) {
         <li>The moderator names the ticket and starts a voting round.</li>
         <li>Everyone privately picks a card; votes reveal together.</li>
         <li>Discuss outliers, re-vote if needed, then move to the next ticket.</li>
-        <li>Export the results (text, CSV, Excel or PDF) when finished.</li>
+        <li>Export the results (text, Excel or PDF) when finished.</li>
       </ol>
 
       <h1 id="privacy">Privacy Policy</h1>
