@@ -312,7 +312,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onEnterRetro }:
 
       {session.status !== 'waiting' && session.story && (
         <div className="story-banner">
-          Voting on <strong>{session.story}</strong>
+          Estimating on ticket <strong>{session.story}</strong>
           {isModerator && (
             <button
               className="story-close"
