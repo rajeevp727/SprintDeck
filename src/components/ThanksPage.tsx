@@ -51,7 +51,7 @@ export default function ThanksPage({ code, name, onEnter, onHome }: Props) {
       {roomName && (
         <div className="thanks-topbar">
           <button className="primary" disabled={busy} onClick={rejoin}>
-            {busy ? 'Rejoining…' : `Rejoin room ${roomName}`}
+            {busy ? 'Rejoining…' : 'Rejoin the room'}
           </button>
         </div>
       )}
@@ -62,11 +62,11 @@ export default function ThanksPage({ code, name, onEnter, onHome }: Props) {
       </header>
 
       <div className="card home-card thanks-card">
-        <h2>Thanks for participating!</h2>
+        <h2>Thanks for Participating!</h2>
         <p className="muted">
           {roomName
-            ? "You've left the session. The room is still open — rejoin any time."
-            : "You've left the session — it has now ended. See you at the next sprint."}
+            ? 'Hope you liked the application!'
+            : 'The room has ended. Hope you liked the application!'}
         </p>
         {error && <p className="error">{error}</p>}
         <button className="ghost" onClick={onHome}>
