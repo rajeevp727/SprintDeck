@@ -269,6 +269,23 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   // Retro is disabled on a fresh room and only unlocks once planning is finished.
   const retroEnabled = session.finished;
 
+  // Enter in the ticket input opens the round: Start voting from waiting (needs a
+  // member) or once finished; Next ticket from a revealed round mid-planning.
+  const submitTicket = () => {
+    if (session.status === 'waiting') {
+      if (voters.length > 0) startVoting();
+    } else if (session.status === 'revealed') {
+      if (session.finished) startVoting();
+      else nextTicket();
+    }
+  };
+  const ticketKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitTicket();
+    }
+  };
+
   return (
     <div className="room">
       <header className="room-header">
@@ -426,6 +443,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
                   style={{ width: `${Math.max(ticketP1.length, 1)}ch` }}
                   value={ticketP1}
                   onChange={(e) => setTicketP1(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
+                  onKeyDown={ticketKeyDown}
                   placeholder="1"
                   maxLength={3}
                 />
@@ -434,6 +452,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
                   className="ticket-seg ticket-seg-2"
                   value={ticketP2}
                   onChange={(e) => setTicketP2(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
+                  onKeyDown={ticketKeyDown}
                   placeholder="0000"
                   maxLength={10}
                 />
