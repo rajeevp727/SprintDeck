@@ -460,27 +460,32 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
                   </button>
                 </>
               )}
-              {session.status === 'revealed' && (
-                <>
-                  <button className="primary" onClick={nextTicket}>
-                    Next ticket
+              {session.status === 'revealed' &&
+                (session.finished ? (
+                  // After Finish, the moderator can only open a fresh voting round —
+                  // no Next ticket / Vote again.
+                  <button className="primary" onClick={startVoting}>
+                    Start voting
                   </button>
-                  <button
-                    className="ghost"
-                    onClick={() => moderatorAction(() => api.reset(code, participantId))}
-                  >
-                    Vote again
-                  </button>
-                  {!session.finished && (
+                ) : (
+                  <>
+                    <button className="primary" onClick={nextTicket}>
+                      Next ticket
+                    </button>
+                    <button
+                      className="ghost"
+                      onClick={() => moderatorAction(() => api.reset(code, participantId))}
+                    >
+                      Vote again
+                    </button>
                     <button
                       className="ghost"
                       onClick={() => moderatorAction(() => api.finish(code, participantId))}
                     >
                       Finish
                     </button>
-                  )}
-                </>
-              )}
+                  </>
+                ))}
             </div>
           </div>
         </>
