@@ -36,6 +36,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const [ticketP2, setTicketP2] = useState('');
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
+  const [retroWelcome, setRetroWelcome] = useState(false); // 2s welcome popup shown before entering the retro
   const [showResults, setShowResults] = useState(false);
   const [endedView, setEndedView] = useState(false); // room ended → show Sprint Results with an Exit button
   const missCount = useRef(0);
@@ -118,7 +119,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     if (localStorage.getItem(key)) return;
     autoJoinedRetro.current = true;
     localStorage.setItem(key, '1');
-    joinRetro();
+    enterRetroWithWelcome();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModerator, session?.retroCode]);
 
@@ -252,6 +253,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     }
   }
 
+  // Members are greeted with a 2s welcome popup first, then taken into the retro.
+  function enterRetroWithWelcome() {
+    if (retroWelcome) return;
+    setRetroWelcome(true);
+    window.setTimeout(() => joinRetro(), 2000);
+  }
+
   async function copyInvite() {
     // Invite link carries the code as a query param; the app reads it on open
     // and strips it from the URL, so the code isn't left in the address bar.
@@ -343,8 +351,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
             <button
               className="ghost"
               title="Join the retrospective"
-              disabled={retroBusy}
-              onClick={joinRetro}
+              disabled={retroBusy || retroWelcome}
+              onClick={enterRetroWithWelcome}
             >
               {retroBusy ? 'Joining…' : 'Join Retrospective'}
             </button>
@@ -550,6 +558,15 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
           onClose={() => (endedView ? onLeave() : setShowResults(false))}
           onExit={endedView ? onLeave : undefined}
         />
+      )}
+
+      {retroWelcome && (
+        <div className="notice-overlay">
+          <div className="notice-card">
+            <span className="notice-mark">♠</span>
+            <h3>Welcome to Sprint Retrospective</h3>
+          </div>
+        </div>
       )}
     </div>
   );

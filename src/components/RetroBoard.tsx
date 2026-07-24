@@ -31,11 +31,10 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [showProfile, setShowProfile] = useState(false);
   const [endedBoard, setEndedBoard] = useState<RetroBoardType | null>(null); // snapshot shown to the facilitator after ending
   const [typingNames, setTypingNames] = useState<Record<string, string>>({});
-  const [notice, setNotice] = useState<'welcome' | 'thanks' | null>(null); // transient 3s popup
+  const [showThanks, setShowThanks] = useState(false); // 2s thank-you popup before a member exits
   const missCount = useRef(0);
   const endedRef = useRef(false); // true once we've ended → stop polling from bouncing off the results view
   const leavingRef = useRef(false); // true once a member is on their way out (thanks popup showing)
-  const welcomedRef = useRef(false); // show the welcome popup only once
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -49,7 +48,7 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const farewellAndLeave = useCallback(() => {
     if (leavingRef.current) return;
     leavingRef.current = true;
-    setNotice('thanks');
+    setShowThanks(true);
     window.setTimeout(() => {
       clearIdentity(code);
       onMissingIdentity();
@@ -130,15 +129,6 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
 
-  // Greet each member with a 2s welcome popup once they land on the board (the
-  // facilitator opened it, so they don't need greeting).
-  useEffect(() => {
-    if (!board || welcomedRef.current || board.facilitatorId === participantId) return;
-    welcomedRef.current = true;
-    setNotice('welcome');
-    const t = window.setTimeout(() => setNotice((n) => (n === 'welcome' ? null : n)), 2000);
-    return () => window.clearTimeout(t);
-  }, [board, participantId]);
 
   // Clear any pending typing timers on unmount.
   useEffect(() => {
@@ -312,15 +302,11 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
         />
       )}
 
-      {notice && (
+      {showThanks && (
         <div className="notice-overlay">
           <div className="notice-card">
             <span className="notice-mark">♠</span>
-            <h3>
-              {notice === 'welcome'
-                ? 'Welcome to Sprint Retrospective'
-                : 'Thanks for participating in the sprint retro'}
-            </h3>
+            <h3>Thanks for participating in the sprint retro</h3>
           </div>
         </div>
       )}
