@@ -69,7 +69,13 @@ export default function ThanksPage({ code, name, onEnter }: Props) {
         <p className="muted">
           {/* Only claim the room "has ended" once the check confirms it — otherwise
               the message flashes during the brief status lookup. */}
-          {checked && !roomName ? 'The room has ended. ' : ''}Hope you liked the application!
+          {checked && !roomName && (
+            <>
+              The room has ended.
+              <br />
+            </>
+          )}
+          Hope you liked the application!
         </p>
         {error && <p className="error">{error}</p>}
       </div>
