@@ -37,7 +37,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [endedView, setEndedView] = useState(false); // room ended → show Sprint Results with an Exit button
-  const [seenResults, setSeenResults] = useState(0); // results count already viewed → badge shows only new ones
   const missCount = useRef(0);
   const endedRef = useRef(false); // true once ended → stop polling from bouncing off the results view
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
@@ -159,10 +158,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   // can review and export the ticket-wise estimates.
   async function finishPlanning() {
     await moderatorAction(() => api.finish(code, participantId));
-    window.setTimeout(() => {
-      setSeenResults(session?.history.length ?? 0); // opening the view marks results as seen
-      setShowResults(true);
-    }, 1000);
+    window.setTimeout(() => setShowResults(true), 1000);
   }
 
   function kickMember(targetId: string, targetName: string) {
@@ -191,7 +187,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
       /* even if it fails, still show the local results snapshot */
     }
     clearIdentity(code);
-    setSeenResults(session.history.length);
     setEndedView(true); // open Sprint Results with an Exit room button; leave on exit
   }
 
@@ -266,8 +261,6 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const voted = voters.filter((p) => p.hasVoted).length;
   const total = voters.length;
   const moderator = session.participants.find((p) => p.isModerator);
-  // Retro is disabled on a fresh room and only unlocks once planning is finished.
-  const retroEnabled = session.finished;
 
   // Enter in the ticket input opens the round: Start voting from waiting (needs a
   // member) or once finished; Next ticket from a revealed round mid-planning.
@@ -302,27 +295,13 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
             {session.status === 'revealed' && 'Revealed 🎉'}
           </span>
           {isModerator && (
-            <button
-              className="ghost"
-              disabled={!session.finished}
-              title={session.finished ? 'View Sprint Results' : 'Finish planning to view Sprint Results'}
-              onClick={() => {
-                setSeenResults(session.history.length); // mark all current results as viewed
-                setShowResults(true);
-              }}
-            >
-              Results
-              {session.history.length > seenResults && (
-                <span className="badge">{session.history.length - seenResults}</span>
-              )}
-            </button>
-          )}
-          {isModerator && (
             <button className="ghost" onClick={copyInvite}>
               {copied ? 'Copied!' : 'Invite'}
             </button>
           )}
+          {/* Retrospective is hidden until planning is finished, then appears here. */}
           {isModerator &&
+            session.finished &&
             (session.retroCode ? (
               <button className="ghost" title="Open the retrospective board" onClick={startRetro}>
                 Open Retrospective
@@ -330,12 +309,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
             ) : (
               <button
                 className="ghost"
-                disabled={!retroEnabled || retroBusy}
-                title={
-                  retroEnabled
-                    ? 'Start a Sprint Retrospective'
-                    : 'Finish sprint planning to enable the retrospective'
-                }
+                disabled={retroBusy}
+                title="Start a Sprint Retrospective"
                 onClick={startRetro}
               >
                 {retroBusy ? 'Opening…' : 'Retrospective'}

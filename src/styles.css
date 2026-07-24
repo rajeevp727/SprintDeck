@@ -491,18 +491,6 @@ input:focus {
   font-weight: 600;
 }
 
-/* Results button badge */
-.badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  padding: 0.05rem 0.4rem;
-  font-weight: 700;
-}
-
 /* Results modal */
 .modal-overlay {
   position: fixed;
