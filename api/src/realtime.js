@@ -31,12 +31,14 @@ async function negotiate(group) {
   return token.url;
 }
 
-// Ping everyone in a group that something changed (best-effort, fire-and-forget).
-async function notifyGroup(group) {
+// Push an event to everyone in a group (best-effort, fire-and-forget). Defaults
+// to a lightweight "changed" ping; pass a payload for other events (e.g. the
+// "ended" signal that immediately evicts members when a room is closed).
+async function notifyGroup(group, payload = { t: 'changed' }) {
   const s = svc();
   if (!s) return;
   try {
-    await s.group(group).sendToAll({ t: 'changed' });
+    await s.group(group).sendToAll(payload);
   } catch {
     /* best-effort — clients still have the polling fallback */
   }

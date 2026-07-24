@@ -80,7 +80,22 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     }
   }, [code, participantId, myName, onThanks]);
 
-  const { connected: rtConnected } = useRealtime(`room:${code}`, refresh);
+  // The moderator ending the room pushes an explicit "ended" event → members are
+  // evicted to the thank-you page at once; any other push is a "changed" ping.
+  const onRealtime = useCallback(
+    (data: unknown) => {
+      const d = data as { t?: string } | undefined;
+      if (d?.t === 'ended') {
+        clearIdentity(code);
+        if (!isModerator) onThanks(code, myName); // moderator's own endRoom() navigates them
+        return;
+      }
+      refresh();
+    },
+    [refresh, isModerator, code, myName, onThanks],
+  );
+
+  const { connected: rtConnected } = useRealtime(`room:${code}`, onRealtime);
 
   useEffect(() => {
     refresh();

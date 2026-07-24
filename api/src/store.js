@@ -166,7 +166,9 @@ async function saveSession(session) {
 async function deleteSession(code) {
   const norm = normalize(code);
   await removeRaw(norm);
-  realtime.notifyGroup('room:' + norm);
+  // Explicit "ended" so connected members are evicted immediately instead of
+  // waiting out the not-found miss tolerance (there is no polling while pushed).
+  realtime.notifyGroup('room:' + norm, { t: 'ended' });
 }
 
 async function genUniqueCode() {
