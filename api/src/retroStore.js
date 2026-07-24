@@ -218,7 +218,9 @@ async function saveBoard(board) {
 async function deleteBoard(code) {
   const norm = normalize(code);
   await removeRaw(norm);
-  realtime.notifyGroup('retro:' + norm);
+  // Explicit "ended" so connected members are pushed out immediately instead of
+  // waiting out the not-found miss tolerance (there is no polling while pushed).
+  realtime.notifyGroup('retro:' + norm, { t: 'ended' });
 }
 
 async function createBoard(name, facilitatorName, desiredCode, roomCode) {

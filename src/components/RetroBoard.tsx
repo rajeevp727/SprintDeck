@@ -7,7 +7,6 @@ import AdBanner from './AdBanner';
 import { toast } from './Toast';
 import { notifyPresence } from '../presence';
 import { useRealtime } from '../realtime';
-import { exportDoc, retroExportDoc, exportFormats } from '../export';
 import RetroResultsModal from './RetroResultsModal';
 
 const pollMs = 200; // polling fallback, used only while real-time isn't connected (e.g. free-tier connection cap / outage)
@@ -30,7 +29,6 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [showExport, setShowExport] = useState(false);
   const [endedBoard, setEndedBoard] = useState<RetroBoardType | null>(null); // snapshot shown to the facilitator after ending
   const [typingNames, setTypingNames] = useState<Record<string, string>>({});
   const missCount = useRef(0);
@@ -92,10 +90,23 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
   const onRealtime = useCallback(
     (data: unknown) => {
       const d = data as { t?: string; id?: string; name?: string } | undefined;
-      if (d?.t === 'typing') showTyping(d.id ?? '', d.name ?? 'Someone');
-      else refresh();
+      if (d?.t === 'typing') {
+        showTyping(d.id ?? '', d.name ?? 'Someone');
+        return;
+      }
+      if (d?.t === 'ended') {
+        // Facilitator's own end sets endedRef (they stay on the results view);
+        // every member is pushed out of the board immediately.
+        if (!endedRef.current) {
+          clearIdentity(code);
+          toast('The retrospective was ended by the facilitator', 'info');
+          onMissingIdentity();
+        }
+        return;
+      }
+      refresh();
     },
-    [refresh, showTyping],
+    [refresh, showTyping, code, onMissingIdentity],
   );
 
   const { connected: rtConnected, send } = useRealtime(`retro:${code}`, onRealtime);
@@ -212,29 +223,6 @@ export default function RetroBoard({ code, onLeave, onMissingIdentity }: Props) 
             <button className="ghost" onClick={copyInvite}>
               {copied ? 'Copied!' : 'Invite'}
             </button>
-          )}
-          {isFacilitator && (
-            <div className="profile">
-              <button className="ghost" title="Export the retrospective" onClick={() => setShowExport((s) => !s)}>
-                Export ▾
-              </button>
-              {showExport && (
-                <div className="profile-menu export-menu">
-                  {exportFormats.map((f) => (
-                    <button
-                      key={f.format}
-                      className="export-item"
-                      onClick={() => {
-                        exportDoc(f.format, retroExportDoc(board));
-                        setShowExport(false);
-                      }}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           )}
           {isFacilitator ? (
             <button className="ghost danger" onClick={endBoard}>

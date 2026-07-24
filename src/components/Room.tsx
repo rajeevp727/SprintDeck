@@ -39,6 +39,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const [endedView, setEndedView] = useState(false); // room ended → show Sprint Results with an Exit button
   const missCount = useRef(0);
   const endedRef = useRef(false); // true once ended → stop polling from bouncing off the results view
+  const autoJoinedRetro = useRef(false); // ensure members are pulled into the retro only once
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
   // No identity for this room (e.g. opened an invite link directly) → bounce to join.
@@ -104,6 +105,21 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
     const id = setInterval(refresh, POLL_MS);
     return () => clearInterval(id);
   }, [refresh, rtConnected]);
+
+  // When the moderator starts the retro, pull every member straight into the
+  // board instead of waiting for them to click "Join Retrospective". Guarded by a
+  // per-retro flag so a member who later leaves the board isn't yanked back in
+  // (the "Join Retrospective" button stays as a manual way back).
+  useEffect(() => {
+    const rc = session?.retroCode;
+    if (isModerator || !rc || autoJoinedRetro.current) return;
+    const key = `pp.autoRetro:${rc}`;
+    if (localStorage.getItem(key)) return;
+    autoJoinedRetro.current = true;
+    localStorage.setItem(key, '1');
+    joinRetro();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModerator, session?.retroCode]);
 
   // Remind the moderator to review results before they close/refresh/navigate away.
   // (Browsers show their own generic confirm text, but this guarantees the prompt.)
@@ -299,9 +315,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
               {copied ? 'Copied!' : 'Invite'}
             </button>
           )}
-          {/* Retrospective is hidden until planning is finished, then appears here. */}
+          {/* Retro is always available — it can be run without any planning estimates. */}
           {isModerator &&
-            session.finished &&
             (session.retroCode ? (
               <button className="ghost" title="Open the retrospective board" onClick={startRetro}>
                 Open Retrospective
