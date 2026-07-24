@@ -369,7 +369,10 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
         </div>
       </header>
 
-      {session.status !== 'waiting' && session.story && (
+      {/* Estimating banner: through voting, and after reveal only for members
+          (the moderator has moved on to the next-ticket controls). */}
+      {session.story &&
+        (session.status === 'voting' || (session.status === 'revealed' && !isModerator)) && (
         <div className="story-banner">
           Estimating on ticket <strong>{session.story}</strong>
           {isModerator && (
