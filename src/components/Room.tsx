@@ -234,9 +234,8 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const voted = voters.filter((p) => p.hasVoted).length;
   const total = voters.length;
   const moderator = session.participants.find((p) => p.isModerator);
-  // Retro can be opened before planning starts (waiting) or once it's finished —
-  // just not mid-round.
-  const retroEnabled = session.status === 'waiting' || session.finished;
+  // Retro is disabled on a fresh room and only unlocks once planning is finished.
+  const retroEnabled = session.finished;
 
   return (
     <div className="room">
