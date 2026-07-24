@@ -5,13 +5,14 @@ interface Props {
   sessionName: string;
   history: HistoryEntry[];
   onClose: () => void;
+  onExit?: () => void; // when set (room ended), show an "Exit room" button
 }
 
 function cell(n: number | null) {
   return n === null ? '—' : n;
 }
 
-export default function ResultsModal({ sessionName, history, onClose }: Props) {
+export default function ResultsModal({ sessionName, history, onClose, onExit }: Props) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -70,6 +71,11 @@ export default function ResultsModal({ sessionName, history, onClose }: Props) {
                 {f.label}
               </button>
             ))}
+            {onExit && (
+              <button className="primary" onClick={onExit}>
+                Exit room
+              </button>
+            )}
           </div>
         </footer>
       </div>

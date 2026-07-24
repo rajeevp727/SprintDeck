@@ -36,8 +36,10 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const [copied, setCopied] = useState(false);
   const [retroBusy, setRetroBusy] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [endedView, setEndedView] = useState(false); // room ended → show Sprint Results with an Exit button
   const [seenResults, setSeenResults] = useState(0); // results count already viewed → badge shows only new ones
   const missCount = useRef(0);
+  const endedRef = useRef(false); // true once ended → stop polling from bouncing off the results view
   const prevParticipants = useRef<{ id: string; name: string }[] | null>(null);
 
   // No identity for this room (e.g. opened an invite link directly) → bounce to join.
@@ -48,7 +50,7 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   const isModerator = session?.moderatorId === participantId;
 
   const refresh = useCallback(async () => {
-    if (!participantId) return;
+    if (!participantId || endedRef.current) return;
     try {
       const { session: s } = await api.getSession(code, participantId);
       missCount.current = 0; // successful poll resets the miss streak
@@ -165,17 +167,22 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
   }
 
   async function endRoom() {
-    window.alert(
-      'Before you end the room: click Finish, then open "Sprint Results" to review and export the ticket-wise estimates. All results are permanently deleted when the room ends.',
-    );
-    if (!window.confirm('End this room for everyone? This cannot be undone.')) return;
+    if (!session) return;
+    if (
+      !window.confirm(
+        'End this room for everyone? You can review and export the Sprint Results before exiting.',
+      )
+    )
+      return;
+    endedRef.current = true; // stop polling so the results view isn't bounced away
     try {
       await api.end(code, participantId);
     } catch {
-      /* even if it fails, leave locally */
+      /* even if it fails, still show the local results snapshot */
     }
     clearIdentity(code);
-    onLeave();
+    setSeenResults(session.history.length);
+    setEndedView(true); // open Sprint Results with an Exit room button; leave on exit
   }
 
   // Moderator-only: open the room's retrospective. If one already exists (its
@@ -424,7 +431,16 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
             )}
             <div className="panel-buttons">
               {session.status === 'waiting' && (
-                <button className="primary" onClick={startVoting}>
+                <button
+                  className="primary"
+                  disabled={voters.length === 0}
+                  title={
+                    voters.length === 0
+                      ? 'Wait for at least one member to join before starting voting'
+                      : 'Start voting'
+                  }
+                  onClick={startVoting}
+                >
                   Start voting
                 </button>
               )}
@@ -498,11 +514,12 @@ export default function Room({ code, onLeave, onMissingIdentity, onThanks, onEnt
       {/* Page-level ad */}
       <AdBanner className="ad-page" />
 
-      {showResults && (
+      {(showResults || endedView) && (
         <ResultsModal
           sessionName={session.name}
           history={session.history}
-          onClose={() => setShowResults(false)}
+          onClose={() => (endedView ? onLeave() : setShowResults(false))}
+          onExit={endedView ? onLeave : undefined}
         />
       )}
     </div>
